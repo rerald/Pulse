@@ -404,33 +404,13 @@
       let totalSalary = 0;
       let totalAllowance = 0;
       
-      // 이번 달의 모든 기록을 순회
+      // 이번 달의 모든 기록을 순회하여 기본급 계산
       Object.keys(logs).forEach(dateStr => {
         const logDate = new Date(dateStr);
         if (logDate.getMonth() === currentMonth && logDate.getFullYear() === currentYear) {
           const logHours = logDate.toDateString() === new Date(today).toDateString() ? workHours : (logs[dateStr].workHours || 0);
           monthTotal += logHours;
           totalSalary += logHours * hourlyWage;
-          
-          // 주휴수당 계산 (주 단위로)
-          const weekRange = getWeekRange(logDate);
-          const weekLogs = {};
-          for (let d = new Date(weekRange.start); d <= new Date(weekRange.end); d.setDate(d.getDate() + 1)) {
-            const weekDateStr = getDateString(d);
-            if (logs[weekDateStr] && logs[weekDateStr].workHours) {
-              weekLogs[weekDateStr] = logs[weekDateStr].workHours;
-            }
-          }
-          
-          // 해당 주의 총 근무시간 계산
-          const weekTotal = Object.values(weekLogs).reduce((sum, hours) => sum + hours, 0);
-          if (weekTotal >= 15) {
-            const weekAllowance = calculateWeeklyAllowance(weekTotal, hourlyWage);
-            // 주휴수당은 한 번만 계산 (중복 방지)
-            if (dateStr === weekRange.start) {
-              totalAllowance += weekAllowance;
-            }
-          }
         }
       });
       
@@ -439,6 +419,49 @@
         monthTotal += workHours;
         totalSalary += workHours * hourlyWage;
       }
+      
+      // 주휴수당 계산 (노동법 기준: 주 단위로 계산, 주의 마지막 날이 속한 달의 급여에 포함)
+      const processedWeeks = new Set();
+      Object.keys(logs).forEach(dateStr => {
+        const logDate = new Date(dateStr);
+        const weekRange = getWeekRange(logDate);
+        const weekKey = weekRange.start + '_' + weekRange.end;
+        
+        // 이미 처리된 주가 아니면 주휴수당 계산
+        if (!processedWeeks.has(weekKey)) {
+          processedWeeks.add(weekKey);
+          
+          // 해당 주의 모든 근무시간 계산
+          let weekTotal = 0;
+          for (let d = new Date(weekRange.start); d <= new Date(weekRange.end); d.setDate(d.getDate() + 1)) {
+            const weekDateStr = getDateString(d);
+            if (logs[weekDateStr] && logs[weekDateStr].workHours) {
+              weekTotal += logs[weekDateStr].workHours;
+            }
+          }
+          
+          // 오늘 근무시간이 해당 주에 포함되면 추가
+          const todayDate = new Date(today);
+          if (todayDate >= new Date(weekRange.start) && todayDate <= new Date(weekRange.end)) {
+            if (!logs[today]) {
+              weekTotal += workHours;
+            } else {
+              weekTotal += logs[today].workHours || 0;
+            }
+          }
+          
+          // 주휴수당 계산 (15시간 이상이면)
+          if (weekTotal >= 15) {
+            const weekAllowance = calculateWeeklyAllowance(weekTotal, hourlyWage);
+            
+            // 주의 마지막 날이 현재 달에 속하면 주휴수당 포함
+            const weekEndDate = new Date(weekRange.end);
+            if (weekEndDate.getMonth() === currentMonth && weekEndDate.getFullYear() === currentYear) {
+              totalAllowance += weekAllowance;
+            }
+          }
+        }
+      });
 
       const totalPayment = totalSalary + totalAllowance;
 
@@ -981,15 +1004,23 @@
       renderHistory();
       updateCalculations();
       
-      // 테스트 데이터 추가 (개발용)
+      // 테스트 데이터 추가 (개발용) - 9/29~10/3 주휴수당 테스트
       if (Object.keys(getWorkLogs()).length === 0) {
-        console.log('테스트 데이터를 추가합니다...');
+        console.log('9/29~10/3 주휴수당 테스트 데이터를 추가합니다...');
         const testData = {
-          '2025-01-15': { in: '09:00', out: '18:00', breakMin: 60, approved: true },
-          '2025-01-14': { in: '09:05', out: '18:00', breakMin: 60, approved: true },
-          '2025-01-13': { in: '09:00', out: '19:00', breakMin: 60, approved: true },
-          '2025-01-12': { in: '09:00', out: '18:00', breakMin: 60, approved: false },
-          '2025-01-11': { in: '09:00', out: '18:00', breakMin: 60, approved: true }
+          // 9/29~10/3 주 (월~금 개근) - 주휴수당 발생
+          '2024-09-29': { in: '09:00', out: '18:00', breakMin: 60, approved: true },
+          '2024-09-30': { in: '09:00', out: '18:00', breakMin: 60, approved: true },
+          '2024-10-01': { in: '09:00', out: '18:00', breakMin: 60, approved: true },
+          '2024-10-02': { in: '09:00', out: '18:00', breakMin: 60, approved: true },
+          '2024-10-03': { in: '09:00', out: '18:00', breakMin: 60, approved: true },
+          
+          // 10/7~10/11 주 (월~금 개근) - 주휴수당 발생
+          '2024-10-07': { in: '09:00', out: '18:00', breakMin: 60, approved: true },
+          '2024-10-08': { in: '09:00', out: '18:00', breakMin: 60, approved: true },
+          '2024-10-09': { in: '09:00', out: '18:00', breakMin: 60, approved: true },
+          '2024-10-10': { in: '09:00', out: '18:00', breakMin: 60, approved: true },
+          '2024-10-11': { in: '09:00', out: '18:00', breakMin: 60, approved: true }
         };
         
         Object.keys(testData).forEach(date => {
@@ -998,6 +1029,11 @@
         
         renderHistory();
         updateCalculations();
+        
+        console.log('테스트 데이터 추가 완료!');
+        console.log('- 9/29~10/3 주: 월~금 개근 (주휴수당 발생)');
+        console.log('- 10/7~10/11 주: 월~금 개근 (주휴수당 발생)');
+        console.log('- 10월 급여에 두 주의 주휴수당이 모두 포함되어야 함');
       }
     });
 
