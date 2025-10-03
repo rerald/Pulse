@@ -343,17 +343,56 @@
       return '정상';
     }
 
+    // ===== 데이터베이스 연결 상태 확인 =====
+    async function checkDatabaseConnection() {
+      try {
+        console.log('데이터베이스 연결 상태 확인 중...');
+        
+        // 간단한 쿼리로 연결 테스트
+        const { data, error } = await supabase
+          .from('work_logs')
+          .select('count')
+          .limit(1);
+
+        if (error) {
+          console.error('데이터베이스 연결 실패:', error);
+          return false;
+        }
+
+        console.log('✅ 데이터베이스 연결 성공');
+        return true;
+      } catch (error) {
+        console.error('데이터베이스 연결 오류:', error);
+        return false;
+      }
+    }
+
     // ===== Supabase 데이터베이스 연동 =====
     async function saveWorkLog(date, log) {
       try {
+        console.log(`📝 근무 기록 저장 시도: ${date}`, log);
+        
         const workHours = calculateWorkHours(log.in, log.out, log.breakMin);
         const status = getAttendanceStatus(workHours, log.in);
+        const employeeId = getEmployeeId();
+        
+        console.log('저장할 데이터:', {
+          id: `LOG_${date}_${getEmployeeName()}`,
+          employee_id: employeeId,
+          work_date: date,
+          clock_in: log.in,
+          clock_out: log.out,
+          break_minutes: parseInt(log.breakMin) || 0,
+          work_hours: workHours,
+          status: status,
+          approval_status: log.approved ? 'approved' : 'pending'
+        });
         
         const { data, error } = await supabase
           .from('work_logs')
           .upsert({
             id: `LOG_${date}_${getEmployeeName()}`,
-            employee_id: getEmployeeId(),
+            employee_id: employeeId,
             work_date: date,
             clock_in: log.in,
             clock_out: log.out,
@@ -367,16 +406,24 @@
           });
 
         if (error) {
-          console.error('근무 기록 저장 실패:', error);
+          console.error('❌ 근무 기록 저장 실패:', error);
+          console.error('오류 상세:', {
+            message: error.message,
+            details: error.details,
+            hint: error.hint,
+            code: error.code
+          });
           // 실패 시 로컬스토리지에 백업 저장
+          console.log('🔄 로컬스토리지에 백업 저장');
           return saveWorkLogLocal(date, log);
         }
 
-        console.log('근무 기록 저장 성공:', data);
+        console.log('✅ 근무 기록 저장 성공:', data);
         return data;
       } catch (error) {
-        console.error('데이터베이스 연결 실패:', error);
+        console.error('❌ 데이터베이스 연결 실패:', error);
         // 오프라인 시 로컬스토리지에 저장
+        console.log('🔄 오프라인 모드: 로컬스토리지에 저장');
         return saveWorkLogLocal(date, log);
       }
     }
@@ -1141,7 +1188,19 @@
       // 데이터베이스에서 초기 데이터 로드
       async function initializeApp() {
         try {
-          console.log('데이터베이스에서 데이터 로드 중...');
+          console.log('🚀 앱 초기화 시작...');
+          
+          // 데이터베이스 연결 상태 확인
+          const isConnected = await checkDatabaseConnection();
+          if (!isConnected) {
+            console.log('⚠️ 데이터베이스 연결 실패, 오프라인 모드로 전환');
+            const logs = getWorkLogsLocal();
+            renderHistory();
+            updateCalculations();
+            return;
+          }
+          
+          console.log('📊 데이터베이스에서 데이터 로드 중...');
           
           // 직원 정보 로드
           const employeeInfo = await getEmployeeInfo();
@@ -1154,11 +1213,11 @@
           
           // 근무 기록 로드
           const logs = await getWorkLogs();
-          console.log('로드된 근무 기록:', Object.keys(logs).length, '개');
+          console.log('📋 로드된 근무 기록:', Object.keys(logs).length, '개');
           
           // UI 업데이트
-          renderHistory();
-          updateCalculations();
+          await renderHistory();
+          await updateCalculations();
           
           // 테스트 데이터가 없으면 추가 (개발용)
           if (Object.keys(logs).length === 0) {
