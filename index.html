@@ -1,0 +1,723 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>주휴수당 MVP 통합 대시보드</title>
+  <!-- Supabase 연결 -->
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --text: #1e293b;
+      --muted: #64748b;
+      --line: #e2e8f0;
+      --blue: #3b82f6;
+      --green: #10b981;
+      --red: #ef4444;
+      --orange: #f59e0b;
+      --white: #ffffff;
+      --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans KR', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .header {
+      background: var(--white);
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 32px;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--line);
+      text-align: center;
+    }
+
+    .header h1 {
+      font-size: 36px;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 12px;
+      background: linear-gradient(135deg, var(--blue), var(--green));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .header p {
+      color: var(--muted);
+      font-size: 18px;
+      margin-bottom: 20px;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 8px 16px;
+      background: linear-gradient(135deg, var(--green), #059669);
+      color: white;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+      box-shadow: var(--shadow);
+    }
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 24px;
+      margin-bottom: 32px;
+    }
+
+    .screen-card {
+      background: var(--white);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--line);
+      transition: all 0.3s ease;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .screen-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+      border-color: var(--blue);
+    }
+
+    .screen-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--blue), var(--green));
+    }
+
+    .screen-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 16px;
+    }
+
+    .screen-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    .screen-subtitle {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .screen-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+
+    .icon-employee {
+      background: linear-gradient(135deg, #e0f2fe, #b3e5fc);
+      color: #0277bd;
+    }
+
+    .icon-owner {
+      background: linear-gradient(135deg, #f3e5f5, #e1bee7);
+      color: #7b1fa2;
+    }
+
+    .icon-admin {
+      background: linear-gradient(135deg, #e8f5e8, #c8e6c9);
+      color: #2e7d32;
+    }
+
+    .screen-preview {
+      background: var(--bg);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+      border: 1px solid var(--line);
+      min-height: 200px;
+      position: relative;
+    }
+
+    .preview-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .preview-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .preview-badge {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: var(--blue);
+      color: white;
+    }
+
+    .preview-content {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    .preview-item {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 6px;
+      padding: 4px 0;
+    }
+
+    .preview-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .preview-label {
+      color: var(--muted);
+    }
+
+    .preview-value {
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .screen-features {
+      margin-bottom: 16px;
+    }
+
+    .feature-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .feature-tag {
+      font-size: 11px;
+      padding: 3px 8px;
+      background: var(--bg);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      color: var(--muted);
+    }
+
+    .screen-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-primary {
+      background: var(--blue);
+      color: white;
+      flex: 1;
+    }
+
+    .btn-primary:hover {
+      background: #2563eb;
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: var(--white);
+      color: var(--text);
+      border: 1px solid var(--line);
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg);
+      border-color: var(--blue);
+    }
+
+    .stats-section {
+      background: var(--white);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--line);
+      margin-bottom: 32px;
+    }
+
+    .stats-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 16px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+    }
+
+    .stat-card {
+      background: var(--bg);
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+      border: 1px solid var(--line);
+    }
+
+    .stat-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--blue);
+      margin-bottom: 4px;
+    }
+
+    .stat-label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .footer {
+      text-align: center;
+      padding: 24px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .connection-status {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 8px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      z-index: 1000;
+    }
+
+    .status-connected {
+      background: #dcfce7;
+      color: #166534;
+      border: 1px solid #bbf7d0;
+    }
+
+    .status-disconnected {
+      background: #fef2f2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        padding: 16px;
+      }
+      
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .header h1 {
+        font-size: 28px;
+      }
+      
+      .header p {
+        font-size: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- 연결 상태 표시 -->
+  <div class="connection-status" id="connection-status">
+    <span id="status-text">연결 확인 중...</span>
+  </div>
+
+  <div class="container">
+    <!-- 헤더 -->
+    <div class="header">
+      <h1>주휴수당 MVP 통합 대시보드</h1>
+      <p>직원, 사장님, 관리자 화면을 한 곳에서 관리하세요</p>
+      <div class="status-badge">🚀 MVP 버전</div>
+    </div>
+
+    <!-- 통계 섹션 -->
+    <div class="stats-section">
+      <h2 class="stats-title">📊 시스템 현황</h2>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value" id="total-businesses">3</div>
+          <div class="stat-label">등록된 사업장</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="total-employees">8</div>
+          <div class="stat-label">총 직원 수</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="pending-approvals">5</div>
+          <div class="stat-label">승인 대기</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="monthly-salary">2,400만원</div>
+          <div class="stat-label">이번달 급여</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 화면 카드 그리드 -->
+    <div class="dashboard-grid">
+      <!-- 직원 화면 카드 -->
+      <div class="screen-card" onclick="openScreen('employee')">
+        <div class="screen-header">
+          <div>
+            <h3 class="screen-title">직원 화면</h3>
+            <p class="screen-subtitle">근무 기록 및 주휴수당 확인</p>
+          </div>
+          <div class="screen-icon icon-employee">👤</div>
+        </div>
+
+        <div class="screen-preview">
+          <div class="preview-header">
+            <span class="preview-title">오늘 근무 기록</span>
+            <span class="preview-badge">홍길동</span>
+          </div>
+          <div class="preview-content">
+            <div class="preview-item">
+              <span class="preview-label">출근 시간</span>
+              <span class="preview-value">09:00</span>
+            </div>
+            <div class="preview-item">
+              <span class="preview-label">퇴근 시간</span>
+              <span class="preview-value">18:00</span>
+            </div>
+            <div class="preview-item">
+              <span class="preview-label">실근로시간</span>
+              <span class="preview-value">8.0h</span>
+            </div>
+            <div class="preview-item">
+              <span class="preview-label">이번 주 누적</span>
+              <span class="preview-value">32.5h</span>
+            </div>
+            <div class="preview-item">
+              <span class="preview-label">예상 주휴수당</span>
+              <span class="preview-value" style="color: var(--green);">19,200원</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="screen-features">
+          <div class="feature-list">
+            <span class="feature-tag">근무 기록 입력</span>
+            <span class="feature-tag">주휴수당 계산</span>
+            <span class="feature-tag">캘린더 보기</span>
+            <span class="feature-tag">히스토리 조회</span>
+          </div>
+        </div>
+
+        <div class="screen-actions">
+          <a href="employee-mvp-enhanced.html" class="btn btn-primary" target="_blank">
+            📱 직원 화면 열기
+          </a>
+          <button class="btn btn-secondary" onclick="previewScreen('employee')">
+            👁️ 미리보기
+          </button>
+        </div>
+      </div>
+
+      <!-- 사장님 화면 카드 -->
+      <div class="screen-card" onclick="openScreen('owner')">
+        <div class="screen-header">
+          <div>
+            <h3 class="screen-title">사장님 화면</h3>
+            <p class="screen-subtitle">근무 승인 및 급여 관리</p>
+          </div>
+          <div class="screen-icon icon-owner">👨‍💼</div>
+        </div>
+
+        <div class="screen-preview">
+          <div class="preview-header">
+            <span class="preview-title">사업장 현황 요약</span>
+            <span class="preview-badge">관리자</span>
+          </div>
+          <div class="preview-content">
+            <div class="preview-item">
+              <span class="preview-label">승인 대기</span>
+              <span class="preview-value">5건</span>
+            </div>
+            <div class="preview-item">
+              <span class="preview-label">오늘 근무자</span>
+              <span class="preview-value">3명</span>
+            </div>
+            <div class="preview-item">
+              <span class="preview-label">이번 주 근무시간</span>
+              <span class="preview-value">120.5h</span>
+            </div>
+            <div class="preview-item">
+              <span class="preview-label">이번달 지급할 급여</span>
+              <span class="preview-value" style="color: var(--blue);">2,400만원</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="screen-features">
+          <div class="feature-list">
+            <span class="feature-tag">근무 승인/반려</span>
+            <span class="feature-tag">급여 산정</span>
+            <span class="feature-tag">직원 관리</span>
+            <span class="feature-tag">통계 조회</span>
+          </div>
+        </div>
+
+        <div class="screen-actions">
+          <a href="owner-dashboard.html" class="btn btn-primary" target="_blank">
+            💼 사장님 화면 열기
+          </a>
+          <button class="btn btn-secondary" onclick="previewScreen('owner')">
+            👁️ 미리보기
+          </button>
+        </div>
+      </div>
+
+      <!-- 관리자 화면 카드 -->
+      <div class="screen-card" onclick="openScreen('admin')">
+        <div class="screen-header">
+          <div>
+            <h3 class="screen-title">관리자 화면</h3>
+            <p class="screen-subtitle">전체 사업장 및 시스템 관리</p>
+          </div>
+          <div class="screen-icon icon-admin">⚙️</div>
+        </div>
+
+        <div class="screen-preview">
+          <div class="preview-header">
+            <span class="preview-title">거래처 사업장 목록</span>
+            <span class="preview-badge">세무법인청년</span>
+          </div>
+          <div class="preview-content">
+            <div class="preview-item">
+              <span class="preview-label">총 거래처 수</span>
+              <span class="preview-value">3개</span>
+            </div>
+            <div class="preview-item">
+              <span class="preview-label">활성 거래처</span>
+              <span class="preview-value">2개</span>
+            </div>
+            <div class="preview-item">
+              <span class="preview-label">총 직원 수</span>
+              <span class="preview-value">8명</span>
+            </div>
+            <div class="preview-item">
+              <span class="preview-label">대기 중인 이슈</span>
+              <span class="preview-value">1건</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="screen-features">
+          <div class="feature-list">
+            <span class="feature-tag">사업장 관리</span>
+            <span class="feature-tag">직원 관리</span>
+            <span class="feature-tag">시스템 설정</span>
+            <span class="feature-tag">데이터 내보내기</span>
+          </div>
+        </div>
+
+        <div class="screen-actions">
+          <a href="admin.html" class="btn btn-primary" target="_blank">
+            🔧 관리자 화면 열기
+          </a>
+          <button class="btn btn-secondary" onclick="previewScreen('admin')">
+            👁️ 미리보기
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 푸터 -->
+    <div class="footer">
+      <p>© 2025 주휴수당 MVP 시스템 | 세무법인청년</p>
+      <p>Supabase 기반 실시간 데이터베이스 연결</p>
+    </div>
+  </div>
+
+  <script>
+    // 연결 상태 확인
+    async function checkConnection() {
+      const statusEl = document.getElementById('connection-status');
+      const statusText = document.getElementById('status-text');
+      
+      try {
+        if (typeof supabase !== 'undefined') {
+          const { data, error } = await supabase
+            .from('businesses')
+            .select('count')
+            .limit(1);
+
+          if (error) {
+            throw error;
+          }
+
+          statusEl.className = 'connection-status status-connected';
+          statusText.textContent = '✅ 데이터베이스 연결됨';
+        } else {
+          throw new Error('Supabase 클라이언트가 로드되지 않았습니다.');
+        }
+      } catch (err) {
+        statusEl.className = 'connection-status status-disconnected';
+        statusText.textContent = '❌ 연결 실패';
+        console.error('연결 오류:', err);
+      }
+    }
+
+    // 화면 열기
+    function openScreen(screenType) {
+      const screens = {
+        employee: 'employee-mvp-enhanced.html',
+        owner: 'owner-dashboard.html',
+        admin: 'admin.html'
+      };
+      
+      const url = screens[screenType];
+      if (url) {
+        window.open(url, '_blank');
+      }
+    }
+
+    // 화면 미리보기
+    function previewScreen(screenType) {
+      const previews = {
+        employee: {
+          title: '직원 화면 미리보기',
+          content: `
+            <div style="padding: 20px;">
+              <h3>📱 직원 화면 주요 기능</h3>
+              <ul style="margin: 16px 0; padding-left: 20px;">
+                <li>오늘 근무 시간 입력 (출근/퇴근/휴게시간)</li>
+                <li>실시간 주휴수당 계산 및 표시</li>
+                <li>이번 주 누적 근무시간 확인</li>
+                <li>근무 기록 히스토리 조회</li>
+                <li>월별 캘린더 뷰</li>
+                <li>사장님 승인 상태 확인</li>
+              </ul>
+              <p style="color: var(--muted); font-size: 14px;">
+                💡 직원이 직접 근무 시간을 입력하고 주휴수당을 미리 확인할 수 있습니다.
+              </p>
+            </div>
+          `
+        },
+        owner: {
+          title: '사장님 화면 미리보기',
+          content: `
+            <div style="padding: 20px;">
+              <h3>💼 사장님 화면 주요 기능</h3>
+              <ul style="margin: 16px 0; padding-left: 20px;">
+                <li>직원 근무 기록 승인/반려/보류</li>
+                <li>이번달 급여 산정 및 내역 확인</li>
+                <li>직원별 근무 현황 캘린더</li>
+                <li>주휴수당 자동 계산</li>
+                <li>근무 기록 수정 및 메모 추가</li>
+                <li>월별 급여 지급 관리</li>
+              </ul>
+              <p style="color: var(--muted); font-size: 14px;">
+                💡 사장님이 직원의 근무 기록을 검토하고 급여를 산정할 수 있습니다.
+              </p>
+            </div>
+          `
+        },
+        admin: {
+          title: '관리자 화면 미리보기',
+          content: `
+            <div style="padding: 20px;">
+              <h3>🔧 관리자 화면 주요 기능</h3>
+              <ul style="margin: 16px 0; padding-left: 20px;">
+                <li>전체 거래처 사업장 관리</li>
+                <li>사업장별 직원 현황 조회</li>
+                <li>새로운 사업장 및 직원 등록</li>
+                <li>시스템 설정 및 데이터 관리</li>
+                <li>전체 통계 및 보고서 생성</li>
+                <li>데이터 내보내기 및 백업</li>
+              </ul>
+              <p style="color: var(--muted); font-size: 14px;">
+                💡 세무법인에서 모든 사업장을 통합 관리할 수 있습니다.
+              </p>
+            </div>
+          `
+        }
+      };
+
+      const preview = previews[screenType];
+      if (preview) {
+        alert(preview.title + '\n\n' + preview.content.replace(/<[^>]*>/g, ''));
+      }
+    }
+
+    // 통계 업데이트 (샘플 데이터)
+    function updateStats() {
+      // 실제로는 Supabase에서 데이터를 가져와야 하지만, 
+      // 현재는 샘플 데이터로 표시
+      const stats = {
+        totalBusinesses: 3,
+        totalEmployees: 8,
+        pendingApprovals: 5,
+        monthlySalary: '2,400만원'
+      };
+
+      document.getElementById('total-businesses').textContent = stats.totalBusinesses;
+      document.getElementById('total-employees').textContent = stats.totalEmployees;
+      document.getElementById('pending-approvals').textContent = stats.pendingApprovals;
+      document.getElementById('monthly-salary').textContent = stats.monthlySalary;
+    }
+
+    // 초기화
+    document.addEventListener('DOMContentLoaded', function() {
+      checkConnection();
+      updateStats();
+      
+      // 5초마다 연결 상태 확인
+      setInterval(checkConnection, 5000);
+    });
+  </script>
+</body>
+</html>

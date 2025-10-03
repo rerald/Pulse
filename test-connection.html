@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supabase 연결 테스트</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f8fafc;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-weight: 600;
+        }
+        .success {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+        .error {
+            background: #fef2f2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+        .loading {
+            background: #fef3c7;
+            color: #92400e;
+            border: 1px solid #fde68a;
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .data-table th,
+        .data-table td {
+            border: 1px solid #e5e7eb;
+            padding: 12px;
+            text-align: left;
+        }
+        .data-table th {
+            background: #f9fafb;
+            font-weight: 600;
+        }
+        .info-box {
+            background: #f0f9ff;
+            border: 1px solid #0ea5e9;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Supabase 연결 테스트</h1>
+        
+        <div class="info-box">
+            <h3>📋 프로젝트 정보</h3>
+            <p><strong>Project ID:</strong> omplskojbargxeiodqdr</p>
+            <p><strong>URL:</strong> https://omplskojbargxeiodqdr.supabase.co</p>
+            <p><strong>상태:</strong> <span id="connection-status">연결 확인 중...</span></p>
+            <p><strong>Supabase 객체:</strong> <span id="supabase-status">확인 중...</span></p>
+        </div>
+
+        <div id="status-message" class="status loading">
+            🔄 Supabase 데이터베이스 연결을 확인하고 있습니다...
+        </div>
+
+        <div>
+            <button onclick="testConnection()">🔗 연결 테스트</button>
+            <button onclick="loadBusinesses()">🏢 사업장 데이터 조회</button>
+            <button onclick="loadEmployees()">👥 직원 데이터 조회</button>
+            <button onclick="loadWorkLogs()">📝 근무 기록 조회</button>
+        </div>
+
+        <div id="data-container">
+            <!-- 조회된 데이터가 여기에 표시됩니다 -->
+        </div>
+    </div>
+
+    <!-- Supabase 연결 -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    
+    <script>
+        // 연결 상태 표시
+        function updateStatus(message, type = 'loading') {
+            const statusEl = document.getElementById('status-message');
+            const statusText = document.getElementById('connection-status');
+            
+            statusEl.textContent = message;
+            statusEl.className = `status ${type}`;
+            statusText.textContent = type === 'success' ? '연결됨' : type === 'error' ? '연결 실패' : '확인 중';
+        }
+
+        // 연결 테스트
+        async function testConnection() {
+            updateStatus('🔄 연결을 테스트하고 있습니다...', 'loading');
+            
+            try {
+                // supabase 객체가 존재하는지 확인
+                if (typeof supabase === 'undefined') {
+                    throw new Error('Supabase 클라이언트가 로드되지 않았습니다. supabase-config.js 파일을 확인하세요.');
+                }
+                
+                const { data, error } = await supabase
+                    .from('businesses')
+                    .select('count')
+                    .limit(1);
+                
+                if (error) {
+                    throw error;
+                }
+                
+                updateStatus('✅ Supabase 데이터베이스 연결 성공!', 'success');
+                return true;
+            } catch (err) {
+                updateStatus(`❌ 연결 실패: ${err.message}`, 'error');
+                console.error('연결 오류 상세:', err);
+                return false;
+            }
+        }
+
+        // 사업장 데이터 조회
+        async function loadBusinesses() {
+            updateStatus('🏢 사업장 데이터를 조회하고 있습니다...', 'loading');
+            
+            try {
+                const { data, error } = await supabase
+                    .from('businesses')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                
+                if (error) throw error;
+                
+                displayData('사업장 목록', data, [
+                    { key: 'id', label: 'ID' },
+                    { key: 'name', label: '사업장명' },
+                    { key: 'owner_name', label: '대표자' },
+                    { key: 'business_type', label: '업종' },
+                    { key: 'status', label: '상태' }
+                ]);
+                
+                updateStatus(`✅ 사업장 ${data.length}개 조회 완료`, 'success');
+            } catch (err) {
+                updateStatus(`❌ 사업장 조회 실패: ${err.message}`, 'error');
+            }
+        }
+
+        // 직원 데이터 조회
+        async function loadEmployees() {
+            updateStatus('👥 직원 데이터를 조회하고 있습니다...', 'loading');
+            
+            try {
+                const { data, error } = await supabase
+                    .from('employees')
+                    .select(`
+                        *,
+                        businesses(name)
+                    `)
+                    .order('created_at', { ascending: false });
+                
+                if (error) throw error;
+                
+                displayData('직원 목록', data, [
+                    { key: 'id', label: 'ID' },
+                    { key: 'name', label: '이름' },
+                    { key: 'position', label: '직급' },
+                    { key: 'employment_type', label: '고용형태' },
+                    { key: 'hourly_wage', label: '시급' },
+                    { key: 'businesses.name', label: '사업장' }
+                ]);
+                
+                updateStatus(`✅ 직원 ${data.length}명 조회 완료`, 'success');
+            } catch (err) {
+                updateStatus(`❌ 직원 조회 실패: ${err.message}`, 'error');
+            }
+        }
+
+        // 근무 기록 조회
+        async function loadWorkLogs() {
+            updateStatus('📝 근무 기록을 조회하고 있습니다...', 'loading');
+            
+            try {
+                const { data, error } = await supabase
+                    .from('work_logs')
+                    .select(`
+                        *,
+                        employees(name, businesses(name))
+                    `)
+                    .order('work_date', { ascending: false })
+                    .limit(10);
+                
+                if (error) throw error;
+                
+                displayData('최근 근무 기록 (10건)', data, [
+                    { key: 'work_date', label: '근무일' },
+                    { key: 'employees.name', label: '직원명' },
+                    { key: 'employees.businesses.name', label: '사업장' },
+                    { key: 'clock_in', label: '출근' },
+                    { key: 'clock_out', label: '퇴근' },
+                    { key: 'work_hours', label: '근무시간' },
+                    { key: 'status', label: '상태' },
+                    { key: 'approval_status', label: '승인상태' }
+                ]);
+                
+                updateStatus(`✅ 근무 기록 ${data.length}건 조회 완료`, 'success');
+            } catch (err) {
+                updateStatus(`❌ 근무 기록 조회 실패: ${err.message}`, 'error');
+            }
+        }
+
+        // 데이터 표시
+        function displayData(title, data, columns) {
+            const container = document.getElementById('data-container');
+            
+            if (!data || data.length === 0) {
+                container.innerHTML = `<p>데이터가 없습니다.</p>`;
+                return;
+            }
+
+            let html = `<h3>${title}</h3>`;
+            html += `<table class="data-table">`;
+            html += `<thead><tr>`;
+            
+            columns.forEach(col => {
+                html += `<th>${col.label}</th>`;
+            });
+            
+            html += `</tr></thead><tbody>`;
+            
+            data.forEach(row => {
+                html += `<tr>`;
+                columns.forEach(col => {
+                    const value = getNestedValue(row, col.key);
+                    html += `<td>${value || '-'}</td>`;
+                });
+                html += `</tr>`;
+            });
+            
+            html += `</tbody></table>`;
+            container.innerHTML = html;
+        }
+
+        // 중첩 객체 값 가져오기
+        function getNestedValue(obj, path) {
+            return path.split('.').reduce((current, key) => {
+                return current && current[key] !== undefined ? current[key] : null;
+            }, obj);
+        }
+
+        // Supabase 객체 상태 업데이트
+        function updateSupabaseStatus() {
+            const statusEl = document.getElementById('supabase-status');
+            if (typeof supabase === 'undefined') {
+                statusEl.textContent = '❌ 로드 실패';
+                statusEl.style.color = '#dc2626';
+            } else {
+                statusEl.textContent = '✅ 로드됨';
+                statusEl.style.color = '#16a34a';
+            }
+        }
+
+        // 페이지 로드 시 자동 연결 테스트
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Supabase 객체 상태 확인
+            updateSupabaseStatus();
+            
+            // 스크립트 로딩 확인
+            if (typeof supabase === 'undefined') {
+                updateStatus('❌ Supabase 스크립트 로딩 실패. 파일 경로를 확인하세요.', 'error');
+                return;
+            }
+            
+            // 잠시 대기 후 연결 테스트
+            setTimeout(async () => {
+                await testConnection();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

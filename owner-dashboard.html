@@ -1,0 +1,925 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>주휴수당 MVP 사장님 화면</title>
+  <!-- Supabase 연결 -->
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+  <style>
+    :root{
+      --bg:#f7f8fa; --text:#111; --muted:#6b7684; --line:#eaecef;
+      --blue:#1672F3; --green:#12B886; --red:#ff6b6b; --orange:#FD7E14; --chip:#f1f3f5;
+    }
+    *{ box-sizing:border-box; font-family: ui-sans-serif, -apple-system, 'Segoe UI', Roboto, 'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic', sans-serif; }
+    body{ margin:0; background:var(--bg); color:var(--text); }
+    .wrap{ max-width:480px; margin:0 auto; padding:20px; }
+    h2{ margin:0 0 12px; font-weight:700; }
+    h3{ margin:0 0 10px; font-weight:700; font-size:16px; }
+    h4{ margin:0 0 10px; font-weight:700; font-size:15px; }
+    .muted{ color:var(--muted); font-size:12px; }
+
+    /* Components */
+    .card{ background:#fff; border:1px solid var(--line); border-radius:12px; padding:12px; box-shadow:0 1px 0 rgba(0,0,0,.03); margin-bottom:12px; }
+    .card-strong{ border-color:#d5d9e3; box-shadow:0 2px 0 rgba(0,0,0,.04); }
+    .row-card{ position:relative; }
+    
+    .btn{ height:44px; border:none; border-radius:12px; font-weight:700; font-size:14px; cursor:pointer; transition:all 0.2s; }
+    .btn-primary{ background:var(--blue); color:#fff; }
+    .btn-primary:hover{ background:#1460d0; }
+    .btn-approve{ background:var(--green); color:#fff; flex:1; }
+    .btn-approve:hover{ background:#0fa575; }
+    .btn-hold{ background:var(--orange); color:#fff; flex:1; }
+    .btn-hold:hover{ background:#e66e00; }
+    .btn-reject{ background:var(--red); color:#fff; flex:1; }
+    .btn-reject:hover{ background:#e55555; }
+    
+    .chip{ display:inline-block; padding:2px 8px; border:1px solid var(--line); border-radius:999px; background:var(--chip); color:#3f474f; font-size:12px; }
+    .chip-ok{ color:#0f7b57; background:#eaf7f1; border-color:#d8efe5; }
+    .chip-warn{ color:#8a6d3b; background:#fff3cd; border-color:#ffe8a1; }
+    .chip-danger{ color:#c92a2a; background:#ffe3e3; border-color:#ffcccc; }
+    .chip-pending{ color:#1672F3; background:#e7efff; border-color:#c9d3ea; }
+    
+    .tag{ display:inline-block; padding:2px 6px; border:1px solid var(--line); border-radius:999px; background:#fff; color:#334; font-size:11px; margin-right:6px; }
+    .tag-blue{ background:#e7efff; border-color:#c9d3ea; color:#1a2a52; }
+    .badge{ font-size:11px; padding:1px 6px; border:1px solid #c9d3ea; border-radius:999px; background:#e7efff; color:#1a2a52; white-space:nowrap; display:inline-flex; align-items:center; line-height:1; }
+    .badge-success{ background:#eaf7f1; color:#0f7b57; border-color:#d8efe5; }
+    .badge-warning{ background:#fff3cd; color:#8a6d3b; border-color:#ffe8a1; }
+    .badge-danger{ background:#ffe3e3; color:#c92a2a; border-color:#ffcccc; }
+
+    /* Status dots */
+    .dot{ display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; vertical-align:middle; }
+    .ok{ background:var(--green); }
+    .wait{ background:var(--orange); }
+    .reject{ background:var(--red); }
+
+    /* Title row */
+    .title-row{ display:flex; justify-content:space-between; align-items:center; gap:8px; }
+    .icon-btn{ display:inline-flex; width:32px; height:32px; border:1px solid var(--line); border-radius:8px; align-items:center; justify-content:center; background:#fff; cursor:pointer; }
+    .icon-btn svg{ width:18px; height:18px; fill:#6b7684; }
+
+    /* Stats Grid */
+    .stats-grid{ display:grid; grid-template-columns:repeat(2, 1fr); gap:10px; margin-bottom:16px; }
+    .stat-card{ background:#fff; border:1px solid var(--line); border-radius:12px; padding:12px; text-align:center; }
+    .stat-value{ font-size:24px; font-weight:700; color:var(--blue); margin:4px 0; }
+    .stat-label{ font-size:12px; color:var(--muted); }
+
+    /* Accordion (week group) */
+    details.week{ margin:8px 0; }
+    details.week > summary{ list-style:none; cursor:pointer; padding:10px 12px; border:1px solid var(--line); border-radius:12px; background:#fff; font-weight:700; }
+    details.week[open] > summary{ border-color:#dfe3ea; }
+    .week-head{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .kpis{ display:flex; gap:6px; flex-wrap:wrap; }
+
+    /* Action buttons row */
+    .action-row{ display:flex; gap:8px; margin-top:8px; }
+
+    /* Input fields for editing */
+    .field-row{ display:flex; gap:10px; align-items:flex-start; }
+    .field{ flex:1; min-width:0; }
+    .label-row{ display:flex; justify-content:space-between; align-items:center; gap:8px; }
+    label{ display:block; font-size:12px; color:var(--muted); margin:6px 0; }
+    input[type=time], input[type=number], select{ width:100%; height:44px; padding:0 10px; border:1px solid var(--line); border-radius:12px; background:#fff; font-size:14px; }
+    
+    /* Time display for edit mode */
+    .time-display-edit{ height:44px; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:600; border:1px solid var(--line); border-radius:12px; background:#fff; }
+
+    /* Modal/Sheet */
+    .modal-overlay{ display:none; position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:1000; }
+    .modal-overlay.show{ display:block; }
+    .modal{ position:fixed; left:0; right:0; bottom:-100%; background:#fff; border-top-left-radius:16px; border-top-right-radius:16px; box-shadow:0 -8px 24px rgba(0,0,0,.12); transition:bottom .3s ease; max-height:80vh; overflow:auto; z-index:1001; }
+    .modal.show{ bottom:0; }
+    .modal-header{ padding:14px 16px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; }
+    .modal-body{ padding:16px; }
+    .modal-footer{ padding:12px 16px; border-top:1px solid var(--line); display:flex; gap:8px; }
+
+    /* snackbar */
+    .snackbar{ position:fixed; left:50%; transform:translateX(-50%); bottom:24px; background:#111; color:#fff; padding:12px 16px; border-radius:12px; font-size:14px; box-shadow:0 6px 18px rgba(0,0,0,.2); opacity:0; pointer-events:none; transition:opacity .3s ease; z-index:2000; }
+    .snackbar.show{ opacity:1; pointer-events:auto; }
+
+    /* Tabs */
+    .tabs{ display:flex; border-bottom:2px solid var(--line); margin-bottom:16px; }
+    .tab{ flex:1; padding:10px; text-align:center; cursor:pointer; font-weight:600; color:var(--muted); border-bottom:2px solid transparent; margin-bottom:-2px; transition:all 0.2s; }
+    .tab.active{ color:var(--blue); border-bottom-color:var(--blue); }
+    .tab:hover{ color:var(--text); }
+
+    /* 캘린더 스타일 */
+    .calendar-worked{ background:#eaf7f1 !important; border-color:#d8efe5 !important; color:#0f7b57 !important; }
+    .calendar-pending{ background:#e7efff !important; border-color:#c9d3ea !important; color:#1a2a52 !important; }
+    .calendar-hold{ background:#fff3cd !important; border-color:#ffe8a1 !important; color:#8a6d3b !important; }
+    .calendar-rejected{ background:#ffe3e3 !important; border-color:#ffcccc !important; color:#c92a2a !important; }
+
+    /* fixed bottom bar */
+    .fixed-bar{ position:fixed; left:0; right:0; bottom:0; background:#ffffff; border-top:1px solid var(--line); padding:12px 16px calc(12px + env(safe-area-inset-bottom)); box-shadow:0 -2px 12px rgba(0,0,0,.06); }
+    .fixed-spacer{ height:76px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="title-row">
+      <h2>사장님 화면 (MVP)</h2>
+      <span class="chip">관리자</span>
+    </div>
+
+    <!-- 사업장 현황 요약 -->
+    <div class="card card-strong">
+      <h3>사업장 현황 요약</h3>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">승인 대기</div>
+          <div class="stat-value" id="pending-count">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">오늘 근무자</div>
+          <div class="stat-value" id="today-workers">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">이번 주 근무시간</div>
+          <div class="stat-value" style="font-size:20px;" id="week-total-hours">0.0h</div>
+        </div>
+        <div class="stat-card" onclick="openSalaryModal()" style="cursor:pointer;">
+          <div class="stat-label">이번달 지급할 급여</div>
+          <div class="stat-value" style="font-size:18px;" id="monthly-salary">0원</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('pending')">승인 대기</div>
+      <div class="tab" onclick="switchTab('approved')">승인 완료</div>
+      <div class="tab" onclick="switchTab('all')">전체</div>
+    </div>
+
+    <!-- 근무 기록 리스트 -->
+    <div id="logs-container">
+      <!-- 동적으로 생성될 근무 기록 -->
+    </div>
+
+    <p class="muted">※ 본 계산은 입력값과 단순 규칙에 따른 참고치입니다. 최종 확정은 사업주의 책임입니다.</p>
+  </div>
+
+  <!-- 급여 산정 모달 -->
+  <div class="modal-overlay" id="salary-overlay" onclick="closeSalaryModal()"></div>
+  <div class="modal" id="salary-modal">
+    <div class="modal-header">
+      <strong>이번달 급여 산정 내역</strong>
+      <a href="#" onclick="closeSalaryModal(); return false;" class="muted">닫기</a>
+    </div>
+    <div class="modal-body">
+      <div id="salary-details">
+        <!-- 동적으로 생성될 급여 내역 -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 직원 상세 모달 -->
+  <div class="modal-overlay" id="employee-detail-overlay" onclick="closeEmployeeDetailModal()"></div>
+  <div class="modal" id="employee-detail-modal">
+    <div class="modal-header">
+      <strong id="employee-detail-title">홍길동 근무 기록</strong>
+      <a href="#" onclick="closeEmployeeDetailModal(); return false;" class="muted">닫기</a>
+    </div>
+    <div class="modal-body">
+      <div id="employee-detail-content">
+        <!-- 동적으로 생성될 직원 상세 내역 -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 편집 모달 -->
+  <div class="modal-overlay" id="edit-overlay" onclick="closeEditModal()"></div>
+  <div class="modal" id="edit-modal">
+    <div class="modal-header">
+      <strong>근무 기록 수정</strong>
+      <a href="#" onclick="closeEditModal(); return false;" class="muted">닫기</a>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label>직원명</label>
+        <div style="font-weight:600; padding:8px 0;" id="edit-employee-name">홍길동</div>
+      </div>
+      <div class="field">
+        <label>일자</label>
+        <div style="font-weight:600; padding:8px 0;" id="edit-date">2025-01-15</div>
+      </div>
+      <div class="field-row" style="margin-top:8px;">
+        <div class="field">
+          <label for="edit-in-time">출근 시간</label>
+          <input type="time" id="edit-in-time" value="09:00" />
+        </div>
+        <div class="field">
+          <label for="edit-out-time">퇴근 시간</label>
+          <input type="time" id="edit-out-time" value="18:00" />
+        </div>
+      </div>
+      <div class="field" style="margin-top:8px;">
+        <label for="edit-break-min">휴게 시간(분)</label>
+        <input type="number" id="edit-break-min" value="60" min="0" step="5" />
+      </div>
+      <div class="field" style="margin-top:8px;">
+        <label for="edit-status">근무 상태</label>
+        <select id="edit-status">
+          <option value="정상">정상</option>
+          <option value="지각">지각</option>
+          <option value="결근">결근</option>
+        </select>
+      </div>
+      <div class="field" style="margin-top:8px;">
+        <label for="edit-note">사장님 메모 (직원에게 전달)</label>
+        <textarea id="edit-note" style="width:100%; height:80px; padding:10px; border:1px solid var(--line); border-radius:12px; font-size:14px; resize:none;"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-hold" style="flex:1;" onclick="closeEditModal()">취소</button>
+      <button class="btn btn-approve" style="flex:2;" onclick="saveEdit()">저장 및 승인</button>
+    </div>
+  </div>
+
+  <!-- snackbar -->
+  <div id="snackbar" class="snackbar"><span id="snackbar-text">처리 완료</span></div>
+
+  <script>
+    // ===== 전역 변수 및 설정 =====
+    const HOURLY_WAGE = 12000;
+    const EXPECTED_SCHEDULE = { start: '09:00', end: '18:00', breakMin: 60 };
+    
+    const STORAGE_KEYS = {
+      WORK_LOGS: 'workLogs',
+      EMPLOYEE_NAME: 'employeeName',
+      HOURLY_WAGE: 'hourlyWage'
+    };
+
+    let currentTab = 'pending';
+    let editingLogKey = null;
+
+    // ===== 유틸리티 함수 =====
+    function hmToMinutes(hm) {
+      if (!hm) return 0;
+      const parts = hm.split(':');
+      const hours = parseInt(parts[0] || '0', 10);
+      const minutes = parseInt(parts[1] || '0', 10);
+      return hours * 60 + minutes;
+    }
+
+    function formatCurrency(amount) {
+      return new Intl.NumberFormat('ko-KR').format(amount) + '원';
+    }
+
+    function getDateString(date = new Date()) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    function getWeekRange(date = new Date()) {
+      const d = new Date(date);
+      const day = d.getDay();
+      const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+      const start = new Date(d.setDate(diff));
+      const end = new Date(d.setDate(diff + 6));
+      
+      return {
+        start: getDateString(start),
+        end: getDateString(end),
+        year: start.getFullYear(),
+        month: start.getMonth() + 1,
+        week: Math.ceil(start.getDate() / 7)
+      };
+    }
+
+    function calculateWorkHours(inTime, outTime, breakMin) {
+      const inMinutes = hmToMinutes(inTime);
+      const outMinutes = hmToMinutes(outTime);
+      const breakMinutes = parseInt(breakMin) || 0;
+      const totalMinutes = Math.max(0, outMinutes - inMinutes - breakMinutes);
+      return totalMinutes / 60;
+    }
+
+    function calculateWeeklyAllowance(totalHours, hourlyWage = HOURLY_WAGE) {
+      if (totalHours >= 15) {
+        return (totalHours / 40) * 8 * hourlyWage;
+      }
+      return 0;
+    }
+
+    function calculateMonthlySalary(logs) {
+      const now = new Date();
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
+      
+      let monthlyTotalHours = 0;
+      let monthlyAllowance = 0;
+      
+      // 이번달의 모든 근무 기록을 확인
+      Object.keys(logs).forEach(date => {
+        const logDate = new Date(date);
+        if (logDate.getMonth() === currentMonth && logDate.getFullYear() === currentYear) {
+          if (logs[date].workHours) {
+            monthlyTotalHours += logs[date].workHours;
+          }
+        }
+      });
+      
+      // 주휴수당 계산 (주 15시간 이상 근무 시)
+      if (monthlyTotalHours >= 15) {
+        // 이번달의 주 수 계산 (대략적으로)
+        const weeksInMonth = Math.ceil(monthlyTotalHours / 40); // 40시간 기준으로 주 수 추정
+        monthlyAllowance = (monthlyTotalHours / 40) * 8 * getHourlyWage();
+      }
+      
+      // 기본 급여 (근무시간 × 시급) + 주휴수당
+      const basicSalary = monthlyTotalHours * getHourlyWage();
+      const totalSalary = basicSalary + monthlyAllowance;
+      
+      return totalSalary;
+    }
+
+    function getAttendanceStatus(workHours, inTime) {
+      if (workHours === 0) return '결근';
+      const expectedIn = hmToMinutes(EXPECTED_SCHEDULE.start);
+      const actualIn = hmToMinutes(inTime);
+      if (actualIn > expectedIn) return '지각';
+      return '정상';
+    }
+
+    // ===== 로컬스토리지 관리 =====
+    function getWorkLogs() {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEYS.WORK_LOGS);
+        return stored ? JSON.parse(stored) : {};
+      } catch (e) {
+        console.warn('로컬스토리지 읽기 실패:', e);
+        return {};
+      }
+    }
+
+    function saveWorkLog(date, log) {
+      const logs = getWorkLogs();
+      logs[date] = {
+        ...log,
+        timestamp: new Date().toISOString(),
+        workHours: calculateWorkHours(log.in, log.out, log.breakMin),
+        status: log.status || getAttendanceStatus(calculateWorkHours(log.in, log.out, log.breakMin), log.in)
+      };
+      localStorage.setItem(STORAGE_KEYS.WORK_LOGS, JSON.stringify(logs));
+      return logs;
+    }
+
+    function getHourlyWage() {
+      const stored = localStorage.getItem(STORAGE_KEYS.HOURLY_WAGE);
+      return stored ? parseInt(stored, 10) : HOURLY_WAGE;
+    }
+
+    function getEmployeeName() {
+      return localStorage.getItem(STORAGE_KEYS.EMPLOYEE_NAME) || '홍길동';
+    }
+
+    // ===== 탭 전환 =====
+    function switchTab(tab) {
+      currentTab = tab;
+      
+      // 탭 UI 업데이트
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      event.target.classList.add('active');
+      
+      renderLogs();
+    }
+
+    // ===== 통계 업데이트 =====
+    function updateStats() {
+      const logs = getWorkLogs();
+      const today = getDateString();
+      const weekRange = getWeekRange();
+      
+      // 승인 대기 건수
+      const pendingCount = Object.keys(logs).filter(date => !logs[date].approved && logs[date].approvalStatus !== 'rejected').length;
+      
+      // 오늘 근무자 수 (현재는 1명)
+      const todayWorkers = logs[today] ? 1 : 0;
+      
+      // 이번 주 총 근무시간
+      let weekTotal = 0;
+      for (let d = new Date(weekRange.start); d <= new Date(weekRange.end); d.setDate(d.getDate() + 1)) {
+        const dateStr = getDateString(d);
+        if (logs[dateStr] && logs[dateStr].workHours) {
+          weekTotal += logs[dateStr].workHours;
+        }
+      }
+      
+      // 이번달 지급할 급여 계산
+      const monthlySalary = calculateMonthlySalary(logs);
+      
+      document.getElementById('pending-count').textContent = pendingCount;
+      document.getElementById('today-workers').textContent = todayWorkers;
+      document.getElementById('week-total-hours').textContent = weekTotal.toFixed(1) + 'h';
+      document.getElementById('monthly-salary').textContent = formatCurrency(monthlySalary);
+    }
+
+    // ===== 근무 기록 렌더링 =====
+    function renderLogs() {
+      const logs = getWorkLogs();
+      const container = document.getElementById('logs-container');
+      
+      if (Object.keys(logs).length === 0) {
+        container.innerHTML = '<p class="muted">아직 근무 기록이 없습니다.</p>';
+        return;
+      }
+
+      // 날짜별로 정렬
+      const sortedDates = Object.keys(logs).sort((a, b) => new Date(b) - new Date(a));
+      
+      // 필터링
+      let filteredDates = sortedDates;
+      if (currentTab === 'pending') {
+        filteredDates = sortedDates.filter(date => !logs[date].approved && logs[date].approvalStatus !== 'rejected');
+      } else if (currentTab === 'approved') {
+        filteredDates = sortedDates.filter(date => logs[date].approved);
+      }
+      
+      if (filteredDates.length === 0) {
+        container.innerHTML = '<p class="muted">해당하는 기록이 없습니다.</p>';
+        return;
+      }
+
+      let html = '';
+      
+      filteredDates.forEach(date => {
+        const log = logs[date];
+        const d = new Date(date);
+        const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+        const dayName = dayNames[d.getDay()];
+        const formattedDate = `${d.getMonth() + 1}/${d.getDate().toString().padStart(2, '0')} (${dayName})`;
+        
+        const statusClass = log.status === '정상' ? 'ok' : log.status === '지각' ? 'wait' : 'reject';
+        const statusChip = log.status === '정상' ? 'chip-ok' : log.status === '지각' ? 'chip-warn' : 'chip-danger';
+        
+        let approvalBadge = '';
+        if (log.approved) {
+          approvalBadge = '<span class="badge badge-success">승인 완료</span>';
+        } else if (log.approvalStatus === 'rejected') {
+          approvalBadge = '<span class="badge badge-danger">반려됨</span>';
+        } else if (log.approvalStatus === 'hold') {
+          approvalBadge = '<span class="badge badge-warning">보류 중</span>';
+        } else {
+          approvalBadge = '<span class="badge">승인 대기</span>';
+        }
+        
+        html += `
+          <div class="card row-card">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px; margin-bottom:8px;">
+              <div>
+                <div style="font-weight:600; margin-bottom:4px;">
+                  <span class="tag">근무</span>
+                  <span class="dot ${statusClass}"></span>
+                  ${formattedDate} - ${getEmployeeName()}
+                </div>
+                <div style="color:var(--muted); font-size:13px;">
+                  ${log.in} ~ ${log.out} (휴게 ${log.breakMin}분) / ${log.workHours.toFixed(1)}h
+                </div>
+              </div>
+              ${approvalBadge}
+            </div>
+            <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px;">
+              <span class="chip ${statusChip}">${log.status}</span>
+              <span class="chip">${date}</span>
+            </div>
+            ${log.note ? `<div style="background:#f8fafc; padding:8px; border-radius:8px; margin-bottom:8px; font-size:13px;">📝 ${log.note}</div>` : ''}
+            ${!log.approved && log.approvalStatus !== 'rejected' ? `
+            <div class="action-row">
+              <button class="btn btn-approve" onclick="approveLog('${date}')">승인</button>
+              <button class="btn btn-hold" onclick="openEditModal('${date}')">수정/보류</button>
+              <button class="btn btn-reject" onclick="rejectLog('${date}')">반려</button>
+            </div>
+            ` : ''}
+            ${log.approved || log.approvalStatus === 'rejected' ? `
+            <div class="action-row">
+              <button class="btn btn-primary" style="flex:1;" onclick="openEditModal('${date}')">수정</button>
+            </div>
+            ` : ''}
+          </div>
+        `;
+      });
+      
+      container.innerHTML = html;
+    }
+
+    // ===== 승인/반려/보류 처리 =====
+    function approveLog(date) {
+      const logs = getWorkLogs();
+      logs[date].approved = true;
+      logs[date].approvalStatus = 'approved';
+      logs[date].approvedAt = new Date().toISOString();
+      localStorage.setItem(STORAGE_KEYS.WORK_LOGS, JSON.stringify(logs));
+      
+      showSnackbar('승인 완료되었습니다.');
+      updateStats();
+      renderLogs();
+    }
+
+    function rejectLog(date) {
+      if (!confirm('이 근무 기록을 반려하시겠습니까?')) return;
+      
+      const logs = getWorkLogs();
+      logs[date].approved = false;
+      logs[date].approvalStatus = 'rejected';
+      logs[date].rejectedAt = new Date().toISOString();
+      localStorage.setItem(STORAGE_KEYS.WORK_LOGS, JSON.stringify(logs));
+      
+      showSnackbar('반려 처리되었습니다.');
+      updateStats();
+      renderLogs();
+    }
+
+    function holdLog(date) {
+      const logs = getWorkLogs();
+      logs[date].approved = false;
+      logs[date].approvalStatus = 'hold';
+      localStorage.setItem(STORAGE_KEYS.WORK_LOGS, JSON.stringify(logs));
+      
+      showSnackbar('보류 처리되었습니다.');
+      updateStats();
+      renderLogs();
+    }
+
+    // ===== 급여 산정 모달 =====
+    function openSalaryModal() {
+      const logs = getWorkLogs();
+      const now = new Date();
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
+      
+      // 이번달 근무 기록 필터링
+      const monthlyLogs = {};
+      Object.keys(logs).forEach(date => {
+        const logDate = new Date(date);
+        if (logDate.getMonth() === currentMonth && logDate.getFullYear() === currentYear) {
+          monthlyLogs[date] = logs[date];
+        }
+      });
+      
+      // 급여 계산
+      const salaryDetails = calculateSalaryDetails(monthlyLogs);
+      
+      // 모달 내용 생성
+      let html = `
+        <div class="card" style="margin-bottom:12px;">
+          <h4>${currentYear}년 ${currentMonth + 1}월 급여 산정</h4>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <span>총 지급 예정 금액</span>
+            <strong style="font-size:18px; color:var(--blue);">${formatCurrency(salaryDetails.totalSalary)}</strong>
+          </div>
+        </div>
+      `;
+      
+      // 각 직원별 급여 내역
+      Object.keys(salaryDetails.employees).forEach(employeeName => {
+        const emp = salaryDetails.employees[employeeName];
+        html += `
+          <div class="card" onclick="console.log('직원 카드 클릭:', '${employeeName}'); openEmployeeDetailModal('${employeeName}')" style="cursor:pointer;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <strong>${employeeName}</strong>
+              <span style="font-size:16px; color:var(--blue);">${formatCurrency(emp.totalSalary)}</span>
+            </div>
+            <div style="font-size:13px; color:var(--muted);">
+              <div style="display:flex; justify-content:space-between; margin:2px 0;">
+                <span>기본 급여 (${emp.totalHours.toFixed(1)}h × ${formatCurrency(getHourlyWage())})</span>
+                <span>${formatCurrency(emp.basicSalary)}</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; margin:2px 0;">
+                <span>주휴수당</span>
+                <span>${formatCurrency(emp.allowance)}</span>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+      
+      document.getElementById('salary-details').innerHTML = html;
+      
+      // 모달 열기
+      document.getElementById('salary-overlay').classList.add('show');
+      document.getElementById('salary-modal').classList.add('show');
+    }
+
+    function closeSalaryModal() {
+      document.getElementById('salary-overlay').classList.remove('show');
+      document.getElementById('salary-modal').classList.remove('show');
+    }
+
+    function calculateSalaryDetails(monthlyLogs) {
+      const employees = {};
+      let totalSalary = 0;
+      
+      // 현재는 단일 직원으로 가정
+      const employeeName = getEmployeeName();
+      let totalHours = 0;
+      
+      Object.keys(monthlyLogs).forEach(date => {
+        const log = monthlyLogs[date];
+        if (log.workHours) {
+          totalHours += log.workHours;
+        }
+      });
+      
+      const hourlyWage = getHourlyWage();
+      const basicSalary = totalHours * hourlyWage;
+      
+      // 주휴수당 계산 (월 총 근무시간이 15시간 이상일 때)
+      let allowance = 0;
+      if (totalHours >= 15) {
+        allowance = (totalHours / 40) * 8 * hourlyWage;
+      }
+      
+      const employeeTotalSalary = basicSalary + allowance;
+      totalSalary += employeeTotalSalary;
+      
+      employees[employeeName] = {
+        totalHours: totalHours,
+        basicSalary: basicSalary,
+        allowance: allowance,
+        totalSalary: employeeTotalSalary
+      };
+      
+      return {
+        totalSalary: totalSalary,
+        employees: employees
+      };
+    }
+
+    // ===== 직원 상세 모달 =====
+    function openEmployeeDetailModal(employeeName) {
+      console.log('직원 상세 모달 열기:', employeeName);
+      document.getElementById('employee-detail-title').textContent = `${employeeName} 근무 기록`;
+      
+      // 이번달 근무 기록 필터링
+      const logs = getWorkLogs();
+      const now = new Date();
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
+      
+      const employeeLogs = {};
+      Object.keys(logs).forEach(date => {
+        const logDate = new Date(date);
+        if (logDate.getMonth() === currentMonth && logDate.getFullYear() === currentYear) {
+          employeeLogs[date] = logs[date];
+        }
+      });
+      
+      // 급여 계산
+      const salaryDetails = calculateSalaryDetails(employeeLogs);
+      const emp = salaryDetails.employees[employeeName];
+      
+      // 캘린더 생성
+      const calendarHtml = generateCalendar(employeeLogs);
+      
+      // 모달 내용 생성
+      let html = `
+        <div class="card" style="margin-bottom:12px;">
+          <h4>${employeeName} 급여 산정</h4>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <span>총 급여</span>
+            <strong style="font-size:18px; color:var(--blue);">${formatCurrency(emp.totalSalary)}</strong>
+          </div>
+          <div style="font-size:13px; color:var(--muted);">
+            <div style="display:flex; justify-content:space-between; margin:2px 0;">
+              <span>기본 급여 (${emp.totalHours.toFixed(1)}h × ${formatCurrency(getHourlyWage())})</span>
+              <span>${formatCurrency(emp.basicSalary)}</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin:2px 0;">
+              <span>주휴수당</span>
+              <span>${formatCurrency(emp.allowance)}</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card" style="margin-bottom:12px;">
+          <h4>근무 기록 캘린더</h4>
+          ${calendarHtml}
+        </div>
+        
+        <div class="card">
+          <h4>일별 근무 내역</h4>
+      `;
+      
+      // 일별 근무 내역
+      const sortedDates = Object.keys(employeeLogs).sort((a, b) => new Date(b) - new Date(a));
+      sortedDates.forEach(date => {
+        const log = employeeLogs[date];
+        const d = new Date(date);
+        const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+        const dayName = dayNames[d.getDay()];
+        const formattedDate = `${d.getMonth() + 1}/${d.getDate().toString().padStart(2, '0')} (${dayName})`;
+        
+        const statusClass = log.status === '정상' ? 'ok' : log.status === '지각' ? 'wait' : 'reject';
+        const statusChip = log.status === '정상' ? 'chip-ok' : log.status === '지각' ? 'chip-warn' : 'chip-danger';
+        
+        let approvalBadge = '';
+        if (log.approved) {
+          approvalBadge = '<span class="badge badge-success">승인 완료</span>';
+        } else if (log.approvalStatus === 'rejected') {
+          approvalBadge = '<span class="badge badge-danger">반려됨</span>';
+        } else if (log.approvalStatus === 'hold') {
+          approvalBadge = '<span class="badge badge-warning">보류 중</span>';
+        } else {
+          approvalBadge = '<span class="badge">승인 대기</span>';
+        }
+        
+        html += `
+          <div style="border:1px solid var(--line); border-radius:8px; padding:8px; margin-bottom:8px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+              <strong>${formattedDate}</strong>
+              ${approvalBadge}
+            </div>
+            <div style="font-size:13px; color:var(--muted); margin-bottom:4px;">
+              ${log.in} ~ ${log.out} (휴게 ${log.breakMin}분) / ${log.workHours.toFixed(1)}h
+            </div>
+            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+              <span class="chip ${statusChip}">${log.status}</span>
+              <span class="chip">${formatCurrency(log.workHours * getHourlyWage())}</span>
+            </div>
+            ${log.note ? `<div style="background:#f8fafc; padding:6px; border-radius:6px; margin-top:6px; font-size:12px;">📝 ${log.note}</div>` : ''}
+          </div>
+        `;
+      });
+      
+      html += '</div>';
+      
+      document.getElementById('employee-detail-content').innerHTML = html;
+      
+      // 모달 열기
+      document.getElementById('employee-detail-overlay').classList.add('show');
+      document.getElementById('employee-detail-modal').classList.add('show');
+    }
+
+    function closeEmployeeDetailModal() {
+      document.getElementById('employee-detail-overlay').classList.remove('show');
+      document.getElementById('employee-detail-modal').classList.remove('show');
+    }
+
+    function generateCalendar(logs) {
+      const now = new Date();
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
+      
+      // 이번달 첫째 날과 마지막 날
+      const firstDay = new Date(currentYear, currentMonth, 1);
+      const lastDay = new Date(currentYear, currentMonth + 1, 0);
+      const daysInMonth = lastDay.getDate();
+      
+      // 첫째 날의 요일 (0=일요일)
+      const firstDayOfWeek = firstDay.getDay();
+      
+      let html = `
+        <div style="display:grid; grid-template-columns:repeat(7, 1fr); gap:2px; margin-bottom:8px;">
+          <div style="text-align:center; padding:4px; font-size:12px; color:var(--muted);">일</div>
+          <div style="text-align:center; padding:4px; font-size:12px; color:var(--muted);">월</div>
+          <div style="text-align:center; padding:4px; font-size:12px; color:var(--muted);">화</div>
+          <div style="text-align:center; padding:4px; font-size:12px; color:var(--muted);">수</div>
+          <div style="text-align:center; padding:4px; font-size:12px; color:var(--muted);">목</div>
+          <div style="text-align:center; padding:4px; font-size:12px; color:var(--muted);">금</div>
+          <div style="text-align:center; padding:4px; font-size:12px; color:var(--muted);">토</div>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(7, 1fr); gap:2px;">
+      `;
+      
+      // 빈 날짜들 (이번달 시작 전)
+      for (let i = 0; i < firstDayOfWeek; i++) {
+        html += '<div style="height:32px;"></div>';
+      }
+      
+      // 이번달 날짜들
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const log = logs[dateStr];
+        
+        let dayClass = 'calendar-day';
+        let dayContent = day;
+        
+        if (log) {
+          if (log.approved) {
+            dayClass += ' calendar-worked';
+          } else if (log.approvalStatus === 'rejected') {
+            dayClass += ' calendar-rejected';
+          } else if (log.approvalStatus === 'hold') {
+            dayClass += ' calendar-hold';
+          } else {
+            dayClass += ' calendar-pending';
+          }
+          
+          dayContent = `${day}<br><span style="font-size:10px;">${log.workHours.toFixed(1)}h</span>`;
+        }
+        
+        html += `<div class="${dayClass}" style="height:32px; display:flex; flex-direction:column; align-items:center; justify-content:center; border:1px solid var(--line); border-radius:4px; font-size:12px; background:#fff;">${dayContent}</div>`;
+      }
+      
+      html += '</div>';
+      
+      return html;
+    }
+
+    // ===== 편집 모달 =====
+    function openEditModal(date) {
+      editingLogKey = date;
+      const logs = getWorkLogs();
+      const log = logs[date];
+      
+      document.getElementById('edit-employee-name').textContent = getEmployeeName();
+      document.getElementById('edit-date').textContent = date;
+      document.getElementById('edit-in-time').value = log.in;
+      document.getElementById('edit-out-time').value = log.out;
+      document.getElementById('edit-break-min').value = log.breakMin;
+      document.getElementById('edit-status').value = log.status;
+      document.getElementById('edit-note').value = log.note || '';
+      
+      document.getElementById('edit-overlay').classList.add('show');
+      document.getElementById('edit-modal').classList.add('show');
+    }
+
+    function closeEditModal() {
+      document.getElementById('edit-overlay').classList.remove('show');
+      document.getElementById('edit-modal').classList.remove('show');
+      editingLogKey = null;
+    }
+
+    function saveEdit() {
+      if (!editingLogKey) return;
+      
+      const logs = getWorkLogs();
+      const inTime = document.getElementById('edit-in-time').value;
+      const outTime = document.getElementById('edit-out-time').value;
+      const breakMin = document.getElementById('edit-break-min').value;
+      const status = document.getElementById('edit-status').value;
+      const note = document.getElementById('edit-note').value;
+      
+      logs[editingLogKey].in = inTime;
+      logs[editingLogKey].out = outTime;
+      logs[editingLogKey].breakMin = parseInt(breakMin) || 0;
+      logs[editingLogKey].status = status;
+      logs[editingLogKey].workHours = calculateWorkHours(inTime, outTime, breakMin);
+      logs[editingLogKey].note = note;
+      logs[editingLogKey].approved = true;
+      logs[editingLogKey].approvalStatus = 'approved';
+      logs[editingLogKey].approvedAt = new Date().toISOString();
+      logs[editingLogKey].modifiedBy = 'owner';
+      
+      localStorage.setItem(STORAGE_KEYS.WORK_LOGS, JSON.stringify(logs));
+      
+      closeEditModal();
+      showSnackbar('수정 및 승인 완료되었습니다.');
+      updateStats();
+      renderLogs();
+    }
+
+    // ===== 스낵바 =====
+    function showSnackbar(message) {
+      const snackbar = document.getElementById('snackbar');
+      const text = document.getElementById('snackbar-text');
+      
+      text.textContent = message;
+      snackbar.classList.add('show');
+      
+      clearTimeout(window.__snackTimer);
+      window.__snackTimer = setTimeout(() => {
+        snackbar.classList.remove('show');
+      }, 3000);
+    }
+
+    // ===== 초기화 =====
+    document.addEventListener('DOMContentLoaded', function() {
+      updateStats();
+      renderLogs();
+      
+      // 테스트 데이터 추가 (개발용)
+      const logs = getWorkLogs();
+      if (Object.keys(logs).length === 0) {
+        console.log('테스트 데이터를 추가합니다...');
+        const testData = {
+          '2025-01-15': { in: '09:00', out: '18:00', breakMin: 60, approved: false },
+          '2025-01-14': { in: '09:05', out: '18:00', breakMin: 60, approved: false },
+          '2025-01-13': { in: '09:00', out: '19:00', breakMin: 60, approved: true },
+          '2025-01-12': { in: '09:00', out: '18:00', breakMin: 60, approved: true },
+          '2025-01-11': { in: '09:00', out: '18:00', breakMin: 60, approved: false, approvalStatus: 'hold', note: '출근 시간 확인 필요' }
+        };
+        
+        Object.keys(testData).forEach(date => {
+          const log = testData[date];
+          const workHours = calculateWorkHours(log.in, log.out, log.breakMin);
+          const status = getAttendanceStatus(workHours, log.in);
+          
+          saveWorkLog(date, {
+            ...log,
+            status: status,
+            workHours: workHours
+          });
+        });
+        
+        updateStats();
+        renderLogs();
+      }
+    });
+  </script>
+</body>
+</html>
