@@ -263,7 +263,8 @@
     const STORAGE_KEYS = {
       WORK_LOGS: 'workLogs',
       EMPLOYEE_NAME: 'employeeName',
-      HOURLY_WAGE: 'hourlyWage'
+      HOURLY_WAGE: 'hourlyWage',
+      EMPLOYEE_ID: 'employeeId'
     };
 
     // ===== 유틸리티 함수 =====
@@ -342,9 +343,83 @@
       return '정상';
     }
 
-    // ===== 로컬스토리지 관리 =====
-    function saveWorkLog(date, log) {
-      const logs = getWorkLogs();
+    // ===== Supabase 데이터베이스 연동 =====
+    async function saveWorkLog(date, log) {
+      try {
+        const workHours = calculateWorkHours(log.in, log.out, log.breakMin);
+        const status = getAttendanceStatus(workHours, log.in);
+        
+        const { data, error } = await supabase
+          .from('work_logs')
+          .upsert({
+            id: `LOG_${date}_${getEmployeeName()}`,
+            employee_id: getEmployeeId(),
+            work_date: date,
+            clock_in: log.in,
+            clock_out: log.out,
+            break_minutes: parseInt(log.breakMin) || 0,
+            work_hours: workHours,
+            status: status,
+            approval_status: log.approved ? 'approved' : 'pending',
+            note: log.note || null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
+
+        if (error) {
+          console.error('근무 기록 저장 실패:', error);
+          // 실패 시 로컬스토리지에 백업 저장
+          return saveWorkLogLocal(date, log);
+        }
+
+        console.log('근무 기록 저장 성공:', data);
+        return data;
+      } catch (error) {
+        console.error('데이터베이스 연결 실패:', error);
+        // 오프라인 시 로컬스토리지에 저장
+        return saveWorkLogLocal(date, log);
+      }
+    }
+
+    async function getWorkLogs() {
+      try {
+        const { data, error } = await supabase
+          .from('work_logs')
+          .select('*')
+          .eq('employee_id', getEmployeeId())
+          .order('work_date', { ascending: false });
+
+        if (error) {
+          console.error('근무 기록 조회 실패:', error);
+          return getWorkLogsLocal();
+        }
+
+        // 데이터베이스 형식을 로컬 형식으로 변환
+        const logs = {};
+        data.forEach(log => {
+          logs[log.work_date] = {
+            in: log.clock_in,
+            out: log.clock_out,
+            breakMin: log.break_minutes,
+            workHours: log.work_hours,
+            status: log.status,
+            approved: log.approval_status === 'approved',
+            note: log.note,
+            timestamp: log.created_at
+          };
+        });
+
+        console.log('근무 기록 조회 성공:', Object.keys(logs).length, '개');
+        return logs;
+      } catch (error) {
+        console.error('데이터베이스 연결 실패:', error);
+        return getWorkLogsLocal();
+      }
+    }
+
+    // ===== 로컬스토리지 백업 (오프라인 대응) =====
+    function saveWorkLogLocal(date, log) {
+      const logs = getWorkLogsLocal();
       logs[date] = {
         ...log,
         timestamp: new Date().toISOString(),
@@ -352,10 +427,11 @@
         status: getAttendanceStatus(calculateWorkHours(log.in, log.out, log.breakMin), log.in)
       };
       localStorage.setItem(STORAGE_KEYS.WORK_LOGS, JSON.stringify(logs));
+      console.log('로컬스토리지에 백업 저장:', date);
       return logs;
     }
 
-    function getWorkLogs() {
+    function getWorkLogsLocal() {
       try {
         const stored = localStorage.getItem(STORAGE_KEYS.WORK_LOGS);
         return stored ? JSON.parse(stored) : {};
@@ -363,6 +439,44 @@
         console.warn('로컬스토리지 읽기 실패:', e);
         return {};
       }
+    }
+
+    // ===== 직원 정보 관리 =====
+    function getEmployeeId() {
+      // 임시로 직원명을 ID로 사용 (실제로는 로그인 시스템에서 가져와야 함)
+      return localStorage.getItem(STORAGE_KEYS.EMPLOYEE_ID) || 'EMP001';
+    }
+
+    function saveEmployeeId(id) {
+      localStorage.setItem(STORAGE_KEYS.EMPLOYEE_ID, id);
+    }
+
+    async function getEmployeeInfo() {
+      try {
+        const { data, error } = await supabase
+          .from('employees')
+          .select('*')
+          .eq('id', getEmployeeId())
+          .single();
+
+        if (error) {
+          console.error('직원 정보 조회 실패:', error);
+          return getEmployeeInfoLocal();
+        }
+
+        console.log('직원 정보 조회 성공:', data);
+        return data;
+      } catch (error) {
+        console.error('데이터베이스 연결 실패:', error);
+        return getEmployeeInfoLocal();
+      }
+    }
+
+    function getEmployeeInfoLocal() {
+      return {
+        name: getEmployeeName(),
+        hourly_wage: getHourlyWage()
+      };
     }
 
     function saveEmployeeName(name) {
@@ -383,7 +497,7 @@
     }
 
     // ===== 실시간 계산 업데이트 =====
-    function updateCalculations() {
+    async function updateCalculations() {
       const inTime = document.getElementById('inTime').value;
       const outTime = document.getElementById('outTime').value;
       const breakMin = document.getElementById('breakMin').value;
@@ -395,7 +509,7 @@
 
       const workHours = calculateWorkHours(inTime, outTime, breakMin);
       const today = getDateString();
-      const logs = getWorkLogs();
+      const logs = await getWorkLogs();
       const hourlyWage = getHourlyWage();
       
       // 이번 달 누적 근무시간 계산
@@ -518,8 +632,8 @@
     }
 
     // ===== 히스토리 렌더링 =====
-    function renderHistory() {
-      const logs = getWorkLogs();
+    async function renderHistory() {
+      const logs = await getWorkLogs();
       const historyContainer = document.getElementById('history-container');
       
       if (Object.keys(logs).length === 0) {
@@ -756,7 +870,7 @@
     }
 
     // ===== 제출 처리 =====
-    function submitWorkLog() {
+    async function submitWorkLog() {
       const inTime = document.getElementById('inTime').value;
       const outTime = document.getElementById('outTime').value;
       const breakMin = document.getElementById('breakMin').value;
@@ -780,12 +894,18 @@
         approved: false
       };
       
-      saveWorkLog(targetDate, log);
-      renderHistory();
-      updateCalculations();
-      
-      // 제출 후 입력 필드 초기화하지 않고 현재 값 유지
-      showSnackAction('제출 완료. 사장 승인 대기입니다.', '히스토리로 이동', goToHistory);
+      try {
+        await saveWorkLog(targetDate, log);
+        const logs = await getWorkLogs();
+        renderHistory();
+        updateCalculations();
+        
+        // 제출 후 입력 필드 초기화하지 않고 현재 값 유지
+        showSnackAction('제출 완료. 사장 승인 대기입니다.', '히스토리로 이동', goToHistory);
+      } catch (error) {
+        console.error('근무 기록 제출 실패:', error);
+        showSnackAction('제출 실패. 다시 시도해주세요.', '확인', closeSnack);
+      }
     }
 
     // ===== 초기화 =====
@@ -1018,45 +1138,68 @@
         window.closeDatePicker();
       };
       
-      // 초기 렌더링
-      renderHistory();
-      updateCalculations();
-      
-      // 로컬스토리지 초기화 (디버깅용)
-      console.log('로컬스토리지 초기화 중...');
-      localStorage.removeItem(STORAGE_KEYS.WORK_LOGS);
-      
-      // 테스트 데이터 추가 (개발용) - 9/29~10/3 주휴수당 테스트
-      if (Object.keys(getWorkLogs()).length === 0) {
-        console.log('9/29~10/3 주휴수당 테스트 데이터를 추가합니다...');
-        const testData = {
-          // 9/29~10/3 주 (월~금 개근) - 주휴수당 발생
-          '2024-09-29': { in: '09:00', out: '18:00', breakMin: 60, approved: true },
-          '2024-09-30': { in: '09:00', out: '18:00', breakMin: 60, approved: true },
-          '2024-10-01': { in: '09:00', out: '18:00', breakMin: 60, approved: true },
-          '2024-10-02': { in: '09:00', out: '18:00', breakMin: 60, approved: true },
-          '2024-10-03': { in: '09:00', out: '18:00', breakMin: 60, approved: true },
+      // 데이터베이스에서 초기 데이터 로드
+      async function initializeApp() {
+        try {
+          console.log('데이터베이스에서 데이터 로드 중...');
           
-          // 10/7~10/11 주 (월~금 개근) - 주휴수당 발생
-          '2024-10-07': { in: '09:00', out: '18:00', breakMin: 60, approved: true },
-          '2024-10-08': { in: '09:00', out: '18:00', breakMin: 60, approved: true },
-          '2024-10-09': { in: '09:00', out: '18:00', breakMin: 60, approved: true },
-          '2024-10-10': { in: '09:00', out: '18:00', breakMin: 60, approved: true },
-          '2024-10-11': { in: '09:00', out: '18:00', breakMin: 60, approved: true }
-        };
-        
-        Object.keys(testData).forEach(date => {
-          saveWorkLog(date, testData[date]);
-        });
-        
-        renderHistory();
-        updateCalculations();
-        
-        console.log('테스트 데이터 추가 완료!');
-        console.log('- 9/29~10/3 주: 월~금 개근 (주휴수당 발생)');
-        console.log('- 10/7~10/11 주: 월~금 개근 (주휴수당 발생)');
-        console.log('- 10월 급여에 두 주의 주휴수당이 모두 포함되어야 함');
+          // 직원 정보 로드
+          const employeeInfo = await getEmployeeInfo();
+          if (employeeInfo) {
+            document.getElementById('empName').textContent = employeeInfo.name;
+            if (employeeInfo.hourly_wage) {
+              saveHourlyWage(employeeInfo.hourly_wage);
+            }
+          }
+          
+          // 근무 기록 로드
+          const logs = await getWorkLogs();
+          console.log('로드된 근무 기록:', Object.keys(logs).length, '개');
+          
+          // UI 업데이트
+          renderHistory();
+          updateCalculations();
+          
+          // 테스트 데이터가 없으면 추가 (개발용)
+          if (Object.keys(logs).length === 0) {
+            console.log('테스트 데이터 추가 중...');
+            const testData = {
+              '2024-09-29': { in: '09:00', out: '18:00', breakMin: 60, approved: true },
+              '2024-09-30': { in: '09:00', out: '18:00', breakMin: 60, approved: true },
+              '2024-10-01': { in: '09:00', out: '18:00', breakMin: 60, approved: true },
+              '2024-10-02': { in: '09:00', out: '18:00', breakMin: 60, approved: true },
+              '2024-10-03': { in: '09:00', out: '18:00', breakMin: 60, approved: true },
+              '2024-10-07': { in: '09:00', out: '18:00', breakMin: 60, approved: true },
+              '2024-10-08': { in: '09:00', out: '18:00', breakMin: 60, approved: true },
+              '2024-10-09': { in: '09:00', out: '18:00', breakMin: 60, approved: true },
+              '2024-10-10': { in: '09:00', out: '18:00', breakMin: 60, approved: true },
+              '2024-10-11': { in: '09:00', out: '18:00', breakMin: 60, approved: true }
+            };
+            
+            for (const [date, log] of Object.entries(testData)) {
+              await saveWorkLog(date, log);
+            }
+            
+            // 다시 렌더링
+            const newLogs = await getWorkLogs();
+            renderHistory();
+            updateCalculations();
+            
+            console.log('테스트 데이터 추가 완료!');
+          }
+          
+        } catch (error) {
+          console.error('초기화 실패:', error);
+          // 오프라인 모드로 전환
+          console.log('오프라인 모드로 전환...');
+          const logs = getWorkLogsLocal();
+          renderHistory();
+          updateCalculations();
+        }
       }
+      
+      // 앱 초기화 실행
+      initializeApp();
     });
 
     // ===== 전역 함수 노출 =====
