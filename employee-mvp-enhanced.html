@@ -248,14 +248,24 @@
       const day = d.getDay();
       const diff = d.getDate() - day + (day === 0 ? -6 : 1); // 월요일 시작
       const start = new Date(d.setDate(diff));
-      const end = new Date(d.setDate(diff + 6));
+      const end = new Date(start);
+      end.setDate(start.getDate() + 6);
+      
+      // 정확한 주차 계산
+      const firstDayOfMonth = new Date(start.getFullYear(), start.getMonth(), 1);
+      const firstMonday = new Date(firstDayOfMonth);
+      const firstDay = firstDayOfMonth.getDay();
+      const daysToFirstMonday = firstDay === 0 ? 1 : 8 - firstDay;
+      firstMonday.setDate(1 + daysToFirstMonday);
+      
+      const weekNumber = Math.ceil((start - firstMonday) / (7 * 24 * 60 * 60 * 1000)) + 1;
       
       return {
         start: getDateString(start),
         end: getDateString(end),
         year: start.getFullYear(),
         month: start.getMonth() + 1,
-        week: Math.ceil(start.getDate() / 7)
+        week: Math.max(1, weekNumber)
       };
     }
 
@@ -352,6 +362,9 @@
       // 오늘 근무시간 추가 (저장되지 않은 경우)
       if (!logs[today]) {
         weekTotal += workHours;
+      } else {
+        // 이미 저장된 오늘 기록이 있으면 그 값을 사용
+        weekTotal += logs[today].workHours || 0;
       }
 
       const allowance = calculateWeeklyAllowance(weekTotal, getHourlyWage());
@@ -644,6 +657,7 @@
       renderHistory();
       updateCalculations();
       
+      // 제출 후 입력 필드 초기화하지 않고 현재 값 유지
       showSnackAction('제출 완료. 사장 승인 대기입니다.', '히스토리로 이동', goToHistory);
     }
 
