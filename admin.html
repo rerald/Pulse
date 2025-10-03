@@ -513,6 +513,38 @@
       margin-top: 4px;
     }
 
+    /* 헤더 내 사업장 정보 스타일 */
+    .header-business-info {
+      margin-top: 20px;
+    }
+
+    .header-business-info .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .header-business-info .info-card {
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--bg);
+    }
+
+    .header-business-info .info-label {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 4px;
+      font-weight: 500;
+    }
+
+    .header-business-info .info-value {
+      font-size: 14px;
+      color: var(--text);
+      font-weight: 600;
+    }
+
     .business-info-section,
     .employee-stats-section,
     .employees-section {
@@ -916,6 +948,24 @@
         font-size: 14px;
         padding: 6px 12px;
       }
+
+      /* 모바일에서 헤더 내 사업장 정보 조정 */
+      .header-business-info .info-grid {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+
+      .header-business-info .info-card {
+        padding: 10px;
+      }
+
+      .header-business-info .info-label {
+        font-size: 11px;
+      }
+
+      .header-business-info .info-value {
+        font-size: 13px;
+      }
     }
   </style>
 </head>
@@ -1056,60 +1106,54 @@
           <div class="business-detail-info">
             <div style="display: flex; align-items: center; justify-content: space-between;">
               <h1 id="detail-business-name">사업장명</h1>
-              <button class="btn btn-secondary business-detail-back-btn" onclick="goBackToList()">← 목록으로</button>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <button class="btn btn-primary" onclick="editBusinessInfo()">정보 수정</button>
+                <button class="btn btn-secondary business-detail-back-btn" onclick="goBackToList()">← 목록으로</button>
+              </div>
             </div>
             <p id="detail-business-info">사업자등록번호 | 대표자명 | 업종</p>
+            
+            <!-- 헤더 내 사업장 정보 -->
+            <div class="header-business-info">
+              <div class="info-grid">
+                <div class="info-card">
+                  <div class="info-label">사업자등록번호</div>
+                  <div class="info-value" id="detail-registration">-</div>
+                </div>
+                <div class="info-card">
+                  <div class="info-label">대표자명</div>
+                  <div class="info-value" id="detail-owner">-</div>
+                </div>
+                <div class="info-card">
+                  <div class="info-label">업종</div>
+                  <div class="info-value" id="detail-type">-</div>
+                </div>
+                <div class="info-card">
+                  <div class="info-label">주소</div>
+                  <div class="info-value" id="detail-address">-</div>
+                </div>
+                <div class="info-card">
+                  <div class="info-label">연락처</div>
+                  <div class="info-value" id="detail-phone">-</div>
+                </div>
+                <div class="info-card">
+                  <div class="info-label">이메일</div>
+                  <div class="info-value" id="detail-email">-</div>
+                </div>
+                <div class="info-card">
+                  <div class="info-label">계약 시작일</div>
+                  <div class="info-value" id="detail-contract-start">-</div>
+                </div>
+                <div class="info-card">
+                  <div class="info-label">상태</div>
+                  <div class="info-value" id="detail-status">-</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- 사업장 기본 정보 -->
-      <div class="business-info-card">
-        <div class="business-info-card-header">
-          <h2 class="business-info-card-title">사업장 기본 정보</h2>
-          <div class="business-info-card-buttons">
-            <button class="business-info-toggle" onclick="toggleBusinessInfo()">상세 정보 보기 <span class="toggle-icon">▼</span></button>
-            <button class="btn btn-primary" onclick="editBusinessInfo()">정보 수정</button>
-          </div>
-        </div>
-        
-        <div class="business-info-content collapsed">
-          <div class="info-grid">
-            <div class="info-card">
-              <div class="info-label">사업자등록번호</div>
-              <div class="info-value" id="detail-registration">-</div>
-            </div>
-            <div class="info-card">
-              <div class="info-label">대표자명</div>
-              <div class="info-value" id="detail-owner">-</div>
-            </div>
-            <div class="info-card">
-              <div class="info-label">업종</div>
-              <div class="info-value" id="detail-type">-</div>
-            </div>
-            <div class="info-card">
-              <div class="info-label">주소</div>
-              <div class="info-value" id="detail-address">-</div>
-            </div>
-            <div class="info-card">
-              <div class="info-label">연락처</div>
-              <div class="info-value" id="detail-phone">-</div>
-            </div>
-            <div class="info-card">
-              <div class="info-label">이메일</div>
-              <div class="info-value" id="detail-email">-</div>
-            </div>
-            <div class="info-card">
-              <div class="info-label">계약 시작일</div>
-              <div class="info-value" id="detail-contract-start">-</div>
-            </div>
-            <div class="info-card">
-              <div class="info-label">상태</div>
-              <div class="info-value" id="detail-status">-</div>
-            </div>
-          </div>
-        </div>
-      </div>
 
       <!-- 근로자 현황 통계 -->
       <div class="employee-stats-section">
