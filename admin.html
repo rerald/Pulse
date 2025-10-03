@@ -47,8 +47,8 @@
       margin-bottom: 24px;
       box-shadow: var(--shadow);
       border: 1px solid var(--line);
-      height: 100px;
-      overflow: hidden;
+      min-height: 100px;
+      overflow: visible;
     }
 
     .header h1 {
@@ -539,9 +539,9 @@
       background: var(--blue);
       color: white;
       border: none;
-      border-radius: 4px;
-      padding: 2px 6px;
-      font-size: 10px;
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 12px;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.2s;
@@ -573,7 +573,7 @@
     }
 
     .header-business-info-content.expanded {
-      max-height: 1000px;
+      max-height: 500px;
       opacity: 1;
       margin-top: 12px;
     }
