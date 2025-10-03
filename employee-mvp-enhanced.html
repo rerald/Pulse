@@ -24,10 +24,11 @@
     label{ display:block; font-size:12px; color:var(--muted); margin:6px 0; }
     input[type=number]{ width:100%; height:44px; padding:0 10px; border:1px solid var(--line); border-radius:12px; background:#fff; }
 
-    /* 타임피커: 표시 전용(큰 글씨) + 투명 네이티브 입력 겹치기 */
-    .time-box{ position:relative; }
-    .time-display{ height:60px; display:flex; align-items:center; justify-content:center; font-size:28px; font-weight:700; border:1px solid var(--line); border-radius:12px; background:#fff; color:#111; margin-top:2px; }
-    .time-native{ position:absolute; inset:0; opacity:0; -webkit-appearance:none; appearance:none; border:none; width:100%; height:100%; z-index:3; }
+    /* 타임피커: 표시 전용(큰 글씨) + 클릭 가능한 네이티브 입력 */
+    .time-box{ position:relative; cursor:pointer; }
+    .time-display{ height:60px; display:flex; align-items:center; justify-content:center; font-size:28px; font-weight:700; border:1px solid var(--line); border-radius:12px; background:#fff; color:#111; margin-top:2px; transition:border-color 0.2s ease; }
+    .time-display:hover{ border-color:var(--blue); }
+    .time-native{ position:absolute; inset:0; opacity:0; -webkit-appearance:none; appearance:none; border:none; width:100%; height:100%; z-index:3; cursor:pointer; }
 
     /* Components */
     .card{ background:#fff; border:1px solid var(--line); border-radius:12px; padding:12px; box-shadow:0 1px 0 rgba(0,0,0,.03); }
@@ -681,7 +682,7 @@
         document.getElementById('breakMin').value = logs[today].breakMin;
       }
       
-      // 타임박스 동기화
+      // 타임박스 동기화 및 클릭 이벤트
       document.querySelectorAll('.time-box').forEach(function(box) {
         const input = box.querySelector('input[type="time"]');
         const display = box.querySelector('.time-display');
@@ -693,16 +694,40 @@
           updateCalculations();
         }
         
+        function openTimePicker() {
+          // 모바일에서 showPicker() 지원 확인
+          if (typeof input.showPicker === 'function') {
+            try {
+              input.showPicker();
+            } catch (e) {
+              input.focus();
+              input.click();
+            }
+          } else {
+            // 데스크톱에서 클릭 이벤트 트리거
+            input.focus();
+            input.click();
+          }
+        }
+        
         sync();
         input.addEventListener('input', sync);
         input.addEventListener('change', sync);
-        display.addEventListener('click', function() {
-          if (input.showPicker) {
-            input.showPicker();
-          } else {
-            input.focus();
+        
+        // 전체 박스 클릭 가능하게 만들기
+        box.addEventListener('click', openTimePicker);
+        display.addEventListener('click', openTimePicker);
+        
+        // 키보드 접근성
+        box.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            openTimePicker();
           }
         });
+        
+        // 포커스 가능하게 만들기
+        box.setAttribute('tabindex', '0');
       });
       
       // 휴게시간 입력 이벤트
