@@ -422,6 +422,8 @@
       
       // 주휴수당 계산 (노동법 기준: 주 단위로 계산, 주의 마지막 날이 속한 달의 급여에 포함)
       const processedWeeks = new Set();
+      const allowanceDetails = []; // 디버깅용
+      
       Object.keys(logs).forEach(dateStr => {
         const logDate = new Date(dateStr);
         const weekRange = getWeekRange(logDate);
@@ -458,9 +460,23 @@
             const weekEndDate = new Date(weekRange.end);
             if (weekEndDate.getMonth() === currentMonth && weekEndDate.getFullYear() === currentYear) {
               totalAllowance += weekAllowance;
+              allowanceDetails.push({
+                week: `${weekRange.start} ~ ${weekRange.end}`,
+                hours: weekTotal,
+                allowance: weekAllowance,
+                month: weekEndDate.getMonth() + 1
+              });
             }
           }
         }
+      });
+      
+      // 디버깅 정보 출력
+      console.log('=== 주휴수당 계산 상세 ===');
+      console.log('현재 달:', currentMonth + 1, '월');
+      console.log('총 주휴수당:', totalAllowance, '원');
+      allowanceDetails.forEach(detail => {
+        console.log(`- ${detail.week}: ${detail.hours}시간 → ${detail.allowance}원 (${detail.month}월 급여에 포함)`);
       });
 
       const totalPayment = totalSalary + totalAllowance;
