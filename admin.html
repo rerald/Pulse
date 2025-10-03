@@ -71,12 +71,93 @@
       margin-bottom: 32px;
     }
 
+    .stats-grid.compact {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
     .stat-card {
       background: var(--white);
       border-radius: 12px;
       padding: 24px;
       box-shadow: var(--shadow);
       border: 1px solid var(--line);
+    }
+
+    .compact-stat {
+      padding: 16px;
+      text-align: center;
+    }
+
+    .compact-stat .stat-value {
+      font-size: 24px;
+      margin-bottom: 4px;
+    }
+
+    .compact-stat .stat-label {
+      font-size: 12px;
+      line-height: 1.2;
+    }
+
+    .clickable-stat {
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .clickable-stat:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+      border-color: var(--blue);
+    }
+
+    .clickable-stat:active {
+      transform: translateY(0);
+    }
+
+    /* 거래처 상태 토글 버튼 스타일 */
+    .business-status-toggle {
+      display: flex;
+      background: var(--bg);
+      border-radius: 8px;
+      padding: 4px;
+      border: 1px solid var(--line);
+      height: 40px;
+      align-items: center;
+    }
+
+    .status-btn {
+      background: transparent;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .status-btn:hover {
+      color: var(--text);
+      background: rgba(59, 130, 246, 0.1);
+    }
+
+    .status-btn.active {
+      background: var(--blue);
+      color: white;
+      box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+    }
+
+    .status-btn.active:hover {
+      background: #2563eb;
+      color: white;
     }
 
     .stat-value {
@@ -728,7 +809,7 @@
     }
 
     .employee-stats-content.expanded {
-      max-height: 500px;
+      max-height: 600px;
       opacity: 1;
       margin-top: 0;
     }
@@ -903,9 +984,69 @@
       .stats-grid {
         grid-template-columns: 1fr;
       }
+
+      .stats-grid.compact {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+        margin-bottom: 20px;
+      }
+
+      .compact-stat {
+        padding: 12px;
+      }
+
+      .compact-stat .stat-value {
+        font-size: 20px;
+      }
+
+      .compact-stat .stat-label {
+        font-size: 11px;
+      }
+
+      /* 모바일에서 토글 버튼 높이 조정 */
+      .business-status-toggle {
+        height: 40px;
+      }
+
+      .status-btn {
+        height: 32px;
+        padding: 6px 12px;
+        font-size: 13px;
+      }
       
       .business-info {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+      }
+
+      .business-card {
+        padding: 16px;
+      }
+
+      .business-header {
+        margin-bottom: 12px;
+      }
+
+      .business-name {
+        font-size: 16px;
+      }
+
+      .business-id {
+        font-size: 12px;
+      }
+
+      .info-item {
+        font-size: 13px;
+        margin-bottom: 6px;
+      }
+
+      .info-label {
+        font-size: 12px;
+        margin-bottom: 2px;
+      }
+
+      .info-value {
+        font-size: 13px;
       }
 
       .info-grid {
@@ -955,7 +1096,7 @@
       }
 
       .employee-stats-content.expanded {
-        max-height: 500px;
+        max-height: 600px;
         opacity: 1;
       }
 
@@ -998,6 +1139,19 @@
       .employee-stats-section .section-buttons {
         flex-direction: row;
         gap: 8px;
+      }
+
+      /* 거래처 목록 섹션도 모바일에서 버튼들을 나란히 배치 */
+      .businesses-section .section-header {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .businesses-section .section-buttons {
+        flex-direction: row;
+        gap: 8px;
+        align-items: center;
       }
 
       .section-title {
@@ -1067,20 +1221,20 @@
     </div>
 
     <!-- 통계 카드 -->
-    <div class="stats-grid">
-      <div class="stat-card">
+    <div class="stats-grid compact">
+      <div class="stat-card compact-stat">
         <div class="stat-value" id="total-businesses">0</div>
         <div class="stat-label">총 거래처 수</div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card compact-stat">
         <div class="stat-value" id="active-businesses">0</div>
         <div class="stat-label">활성 거래처</div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card compact-stat">
         <div class="stat-value" id="total-employees">0</div>
         <div class="stat-label">총 직원 수</div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card compact-stat">
         <div class="stat-value" id="pending-issues">0</div>
         <div class="stat-label">대기 중인 이슈</div>
       </div>
@@ -1092,7 +1246,14 @@
       <div class="businesses-section">
         <div class="section-header">
           <h2 class="section-title">거래처 사업장 목록</h2>
-          <button class="btn btn-primary" onclick="openAddBusinessModal()">+ 거래처 추가</button>
+          <div class="section-buttons">
+            <div class="business-status-toggle">
+              <button class="status-btn active" onclick="filterBusinessesByStatus('all')" id="status-all">전체</button>
+              <button class="status-btn" onclick="filterBusinessesByStatus('active')" id="status-active">활성</button>
+              <button class="status-btn" onclick="filterBusinessesByStatus('inactive')" id="status-inactive">비활성</button>
+            </div>
+            <button class="btn btn-primary" onclick="openAddBusinessModal()">+ 거래처 추가</button>
+          </div>
         </div>
         
         <input type="text" class="search-bar" placeholder="거래처명 또는 사업자등록번호로 검색..." id="search-input" onkeyup="filterBusinesses()">
@@ -1271,19 +1432,19 @@
         
         <div class="employee-stats-content collapsed">
           <div class="stats-grid">
-            <div class="stat-card">
+            <div class="stat-card clickable-stat" onclick="filterEmployeesByType('all')">
               <div class="stat-value" id="total-employees-count">0</div>
               <div class="stat-label">총 근로자 수</div>
             </div>
-            <div class="stat-card">
+            <div class="stat-card clickable-stat" onclick="filterEmployeesByType('regular')">
               <div class="stat-value" id="regular-employees-count">0</div>
               <div class="stat-label">정규직</div>
             </div>
-            <div class="stat-card">
+            <div class="stat-card clickable-stat" onclick="filterEmployeesByType('part-time')">
               <div class="stat-value" id="part-time-employees-count">0</div>
               <div class="stat-label">단시간 근로자</div>
             </div>
-            <div class="stat-card">
+            <div class="stat-card clickable-stat" onclick="filterEmployeesByType('short-time')">
               <div class="stat-value" id="short-time-employees-count">0</div>
               <div class="stat-label">초단시간 근로자</div>
             </div>
@@ -1682,11 +1843,28 @@
       const container = document.getElementById('business-list');
       const searchTerm = document.getElementById('search-input').value.toLowerCase();
 
-      const filteredBusinesses = businesses.filter(business => 
-        business.name.toLowerCase().includes(searchTerm) ||
-        business.registration.includes(searchTerm) ||
-        business.owner.toLowerCase().includes(searchTerm)
-      );
+      const filteredBusinesses = businesses.filter(business => {
+        // 검색 필터
+        const matchesSearch = business.name.toLowerCase().includes(searchTerm) ||
+          business.registration.includes(searchTerm) ||
+          business.owner.toLowerCase().includes(searchTerm);
+        
+        // 상태 필터
+        let matchesStatus = false;
+        switch(currentBusinessStatus) {
+          case 'all':
+            matchesStatus = true;
+            break;
+          case 'active':
+            matchesStatus = business.status === 'active';
+            break;
+          case 'inactive':
+            matchesStatus = business.status === 'inactive';
+            break;
+        }
+        
+        return matchesSearch && matchesStatus;
+      });
 
       if (filteredBusinesses.length === 0) {
         container.innerHTML = '<p style="text-align: center; color: var(--muted); padding: 40px;">거래처가 없습니다.</p>';
@@ -2074,6 +2252,47 @@
         toggle.classList.remove('expanded');
         toggle.innerHTML = '펼치기 <span class="toggle-icon">▼</span>';
       }
+    }
+
+    // 통계 카드 클릭 시 근로자 필터링
+    function filterEmployeesByType(type) {
+      // 근로자 목록 섹션으로 스크롤
+      const employeesSection = document.querySelector('.employees-section');
+      employeesSection.scrollIntoView({ behavior: 'smooth' });
+      
+      // 필터 드롭다운 값 설정
+      const filterSelect = document.getElementById('employee-filter');
+      if (filterSelect) {
+        filterSelect.value = type;
+        // 필터 적용
+        filterEmployees();
+      }
+      
+      // 통계 카드 시각적 피드백
+      const clickedCard = event.currentTarget;
+      clickedCard.style.transform = 'scale(0.95)';
+      setTimeout(() => {
+        clickedCard.style.transform = '';
+      }, 150);
+    }
+
+    // 거래처 상태별 필터링
+    let currentBusinessStatus = 'all';
+
+    function filterBusinessesByStatus(status) {
+      // 모든 상태 버튼에서 active 클래스 제거
+      document.querySelectorAll('.status-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      
+      // 클릭된 버튼에 active 클래스 추가
+      document.getElementById(`status-${status}`).classList.add('active');
+      
+      // 현재 상태 저장
+      currentBusinessStatus = status;
+      
+      // 거래처 목록 필터링 적용
+      filterBusinesses();
     }
 
     // 근로자 추가
