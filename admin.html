@@ -688,7 +688,6 @@
 
     /* 근로자 현황 섹션 펼치기/접기 기능 */
     .employee-stats-toggle {
-      display: none;
       background: var(--blue);
       color: white;
       border: none;
@@ -716,17 +715,35 @@
 
     .employee-stats-content {
       transition: all 0.3s ease;
+      overflow: hidden;
     }
 
     .employee-stats-content.collapsed {
       max-height: 0;
-      overflow: hidden;
       opacity: 0;
+      margin-top: 0;
     }
 
     .employee-stats-content.expanded {
-      max-height: 1000px;
+      max-height: 500px;
       opacity: 1;
+      margin-top: 16px;
+    }
+
+    /* 근로자 현황 섹션 높이 조정 */
+    .employee-stats-section {
+      min-height: 60px;
+      overflow: visible;
+    }
+
+    .employee-stats-section.collapsed {
+      height: 60px;
+      overflow: hidden;
+    }
+
+    .employee-stats-section.expanded {
+      min-height: auto;
+      overflow: visible;
     }
 
     .info-grid {
@@ -935,8 +952,17 @@
       }
 
       .employee-stats-content.expanded {
-        max-height: 1000px;
+        max-height: 500px;
         opacity: 1;
+      }
+
+      /* 모바일에서 근로자 현황 섹션 높이 조정 */
+      .employee-stats-section {
+        min-height: 50px;
+      }
+
+      .employee-stats-section.collapsed {
+        height: 50px;
       }
 
       /* 모바일에서 섹션 헤더 조정 */
@@ -1221,7 +1247,7 @@
 
 
       <!-- 근로자 현황 통계 -->
-      <div class="employee-stats-section">
+      <div class="employee-stats-section collapsed">
         <div class="section-header">
           <h2 class="section-title">
             근로자 현황
@@ -2024,18 +2050,23 @@
     function toggleEmployeeStats() {
       const toggle = document.querySelector('.employee-stats-toggle');
       const content = document.querySelector('.employee-stats-content');
+      const section = document.querySelector('.employee-stats-section');
       const icon = toggle.querySelector('.toggle-icon');
       
       if (content.classList.contains('collapsed')) {
         // 펼치기
         content.classList.remove('collapsed');
         content.classList.add('expanded');
+        section.classList.remove('collapsed');
+        section.classList.add('expanded');
         toggle.classList.add('expanded');
         toggle.innerHTML = '접기 <span class="toggle-icon">▲</span>';
       } else {
         // 접기
         content.classList.remove('expanded');
         content.classList.add('collapsed');
+        section.classList.remove('expanded');
+        section.classList.add('collapsed');
         toggle.classList.remove('expanded');
         toggle.innerHTML = '펼치기 <span class="toggle-icon">▼</span>';
       }
