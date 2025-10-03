@@ -43,22 +43,25 @@
     .header {
       background: var(--white);
       border-radius: 12px;
-      padding: 24px;
+      padding: 16px;
       margin-bottom: 24px;
       box-shadow: var(--shadow);
       border: 1px solid var(--line);
+      height: 100px;
+      overflow: hidden;
     }
 
     .header h1 {
-      font-size: 28px;
+      font-size: 20px;
       font-weight: 700;
       color: var(--text);
-      margin-bottom: 8px;
+      margin-bottom: 2px;
     }
 
     .header p {
       color: var(--muted);
-      font-size: 16px;
+      font-size: 13px;
+      margin: 0;
     }
 
     .stats-grid {
@@ -490,12 +493,17 @@
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      gap: 16px;
+      gap: 12px;
+      height: 100%;
     }
 
     .business-detail-info {
       flex: 1;
       min-width: 0;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
     }
 
     .business-detail-back-btn {
@@ -507,31 +515,33 @@
     .business-detail-header .business-detail-info h1 {
       margin-bottom: 0;
       margin-right: 16px;
+      font-size: 18px;
     }
 
     .business-detail-header .business-detail-info p {
-      margin-top: 4px;
+      margin-top: 2px;
+      font-size: 12px;
     }
 
     /* 헤더 내 사업장 정보 스타일 */
     .header-business-info {
-      margin-top: 20px;
+      margin-top: 4px;
     }
 
     .business-info-line {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-top: 8px;
+      margin-top: 2px;
     }
 
     .header-business-info-toggle {
       background: var(--blue);
       color: white;
       border: none;
-      border-radius: 6px;
-      padding: 4px 8px;
-      font-size: 12px;
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 10px;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.2s;
