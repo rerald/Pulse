@@ -140,7 +140,7 @@
       align-items: center;
       flex-wrap: wrap;
       gap: 12px;
-      padding: 20px 0;
+      padding: 20px 24px;
     }
 
     .employee-stats-section .section-title {
@@ -610,7 +610,7 @@
     .employees-section {
       background: var(--white);
       border-radius: 12px;
-      padding: 24px;
+      padding: 0;
       margin-bottom: 24px;
       box-shadow: var(--shadow);
       border: 1px solid var(--line);
@@ -717,18 +717,20 @@
     .employee-stats-content {
       transition: all 0.3s ease;
       overflow: hidden;
+      padding: 0 24px 24px 24px;
     }
 
     .employee-stats-content.collapsed {
       max-height: 0;
       opacity: 0;
       margin-top: 0;
+      padding: 0 24px;
     }
 
     .employee-stats-content.expanded {
       max-height: 500px;
       opacity: 1;
-      margin-top: 16px;
+      margin-top: 0;
     }
 
     /* 근로자 현황 섹션 높이 조정 */
@@ -990,7 +992,7 @@
         flex-direction: row;
         align-items: center;
         justify-content: space-between;
-        padding: 15px 0;
+        padding: 15px 20px;
       }
 
       .employee-stats-section .section-buttons {
