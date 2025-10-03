@@ -419,9 +419,14 @@
       opacity: 1;
     }
 
-    /* 모바일에서 핵심 정보만 표시 */
+    /* 모바일에서 핵심 정보도 접혀있음 */
     .business-info-essential {
       display: none;
+      transition: all 0.3s ease;
+    }
+
+    .business-info-essential.expanded {
+      display: block;
     }
 
     .info-grid {
@@ -605,8 +610,12 @@
       }
 
       .business-info-essential {
-        display: block;
+        display: none;
         margin-bottom: 16px;
+      }
+
+      .business-info-essential.expanded {
+        display: block;
       }
 
       .business-info-content {
@@ -1590,19 +1599,22 @@
     // 모바일에서 사업장 정보 펼치기/접기
     function toggleBusinessInfo() {
       const toggle = document.querySelector('.business-info-toggle');
-      const content = document.querySelector('.business-info-content');
+      const essentialContent = document.querySelector('.business-info-essential');
+      const detailContent = document.querySelector('.business-info-content');
       const icon = toggle.querySelector('.toggle-icon');
       
-      if (content.classList.contains('collapsed')) {
-        // 펼치기
-        content.classList.remove('collapsed');
-        content.classList.add('expanded');
+      if (detailContent.classList.contains('collapsed')) {
+        // 펼치기 - 핵심 정보와 상세 정보 모두 표시
+        essentialContent.classList.add('expanded');
+        detailContent.classList.remove('collapsed');
+        detailContent.classList.add('expanded');
         toggle.classList.add('expanded');
         toggle.innerHTML = '상세 정보 숨기기 <span class="toggle-icon">▲</span>';
       } else {
-        // 접기
-        content.classList.remove('expanded');
-        content.classList.add('collapsed');
+        // 접기 - 핵심 정보와 상세 정보 모두 숨김
+        essentialContent.classList.remove('expanded');
+        detailContent.classList.remove('expanded');
+        detailContent.classList.add('collapsed');
         toggle.classList.remove('expanded');
         toggle.innerHTML = '상세 정보 보기 <span class="toggle-icon">▼</span>';
       }
