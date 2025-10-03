@@ -1048,7 +1048,16 @@
       <!-- 근로자 현황 통계 -->
       <div class="employee-stats-section">
         <div class="section-header">
-          <h2 class="section-title">근로자 현황</h2>
+          <h2 class="section-title">
+            근로자 현황
+            <span class="employee-count-summary" id="employee-count-summary">
+              (<span class="employee-count-item" id="regular-count-item">0<span class="tooltip">정규직 근로자</span></span>
+              <span class="employee-count-separator">/</span>
+              <span class="employee-count-item" id="part-time-count-item">0<span class="tooltip">단시간 근로자</span></span>
+              <span class="employee-count-separator">/</span>
+              <span class="employee-count-item" id="short-time-count-item">0<span class="tooltip">초단시간 근로자</span></span>)
+            </span>
+          </h2>
           <div class="section-buttons">
             <button class="employee-stats-toggle" onclick="toggleEmployeeStats()">펼치기 <span class="toggle-icon">▼</span></button>
             <button class="btn btn-primary" onclick="addEmployee()">+ 근로자 추가</button>
@@ -1080,16 +1089,7 @@
       <!-- 근로자 목록 -->
       <div class="employees-section">
         <div class="section-header">
-          <h2 class="section-title">
-            근로자 목록
-            <span class="employee-count-summary" id="employee-count-summary">
-              (<span class="employee-count-item" id="regular-count-item">0<span class="tooltip">정규직 근로자</span></span>
-              <span class="employee-count-separator">/</span>
-              <span class="employee-count-item" id="part-time-count-item">0<span class="tooltip">단시간 근로자</span></span>
-              <span class="employee-count-separator">/</span>
-              <span class="employee-count-item" id="short-time-count-item">0<span class="tooltip">초단시간 근로자</span></span>)
-            </span>
-          </h2>
+          <h2 class="section-title">근로자 목록</h2>
           <div style="display: flex; gap: 12px;">
             <select class="form-input" id="employee-filter" onchange="filterEmployees()" style="width: auto;">
               <option value="all">전체</option>
