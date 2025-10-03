@@ -500,6 +500,17 @@
 
     .business-detail-back-btn {
       flex-shrink: 0;
+      margin-top: 0;
+    }
+
+    /* 사업장명과 버튼을 같은 높이에 배치 */
+    .business-detail-header .business-detail-info h1 {
+      margin-bottom: 0;
+      margin-right: 16px;
+    }
+
+    .business-detail-header .business-detail-info p {
+      margin-top: 4px;
     }
 
     .business-info-section,
@@ -878,19 +889,20 @@
         gap: 12px;
       }
 
-      .business-detail-back-btn {
-        align-self: flex-end;
-        order: -1;
-      }
-
       .business-detail-info h1 {
         font-size: 20px;
-        margin-bottom: 4px;
+        margin-bottom: 0;
       }
 
       .business-detail-info p {
         font-size: 14px;
         line-height: 1.4;
+        margin-top: 4px;
+      }
+
+      .business-detail-back-btn {
+        font-size: 14px;
+        padding: 6px 12px;
       }
     }
   </style>
@@ -1030,10 +1042,12 @@
       <div class="header">
         <div class="business-detail-header">
           <div class="business-detail-info">
-            <h1 id="detail-business-name">사업장명</h1>
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <h1 id="detail-business-name">사업장명</h1>
+              <button class="btn btn-secondary business-detail-back-btn" onclick="goBackToList()">← 목록으로</button>
+            </div>
             <p id="detail-business-info">사업자등록번호 | 대표자명 | 업종</p>
           </div>
-          <button class="btn btn-secondary business-detail-back-btn" onclick="goBackToList()">← 목록으로</button>
         </div>
       </div>
 
