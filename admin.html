@@ -130,6 +130,26 @@
       align-items: center;
     }
 
+    /* 근로자 현황 섹션 헤더 특별 스타일 */
+    .employee-stats-section .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .employee-stats-section .section-title {
+      flex: 1;
+      min-width: 200px;
+    }
+
+    .employee-stats-section .section-buttons {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
     .section-title {
       font-size: 20px;
       font-weight: 700;
@@ -449,6 +469,49 @@
       display: block;
     }
 
+    /* 근로자 현황 섹션 펼치기/접기 기능 */
+    .employee-stats-toggle {
+      display: none;
+      background: var(--blue);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .employee-stats-toggle:hover {
+      background: #2563eb;
+    }
+
+    .employee-stats-toggle .toggle-icon {
+      margin-left: 8px;
+      transition: transform 0.3s ease;
+    }
+
+    .employee-stats-toggle.expanded .toggle-icon {
+      transform: rotate(180deg);
+    }
+
+    .employee-stats-content {
+      transition: all 0.3s ease;
+    }
+
+    .employee-stats-content.collapsed {
+      max-height: 0;
+      overflow: hidden;
+      opacity: 0;
+    }
+
+    .employee-stats-content.expanded {
+      max-height: 1000px;
+      opacity: 1;
+    }
+
     .info-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -649,6 +712,22 @@
         opacity: 1;
       }
 
+      /* 모바일에서 근로자 현황 펼치기/접기 기능 활성화 */
+      .employee-stats-toggle {
+        display: block;
+      }
+
+      .employee-stats-content {
+        max-height: 0;
+        overflow: hidden;
+        opacity: 0;
+      }
+
+      .employee-stats-content.expanded {
+        max-height: 1000px;
+        opacity: 1;
+      }
+
       /* 모바일에서 섹션 헤더 조정 */
       .section-header {
         flex-direction: column;
@@ -664,6 +743,18 @@
       }
 
       .business-info-section .section-buttons {
+        flex-direction: row;
+        gap: 8px;
+      }
+
+      /* 근로자 현황 섹션도 모바일에서 버튼들을 나란히 배치 */
+      .employee-stats-section .section-header {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .employee-stats-section .section-buttons {
         flex-direction: row;
         gap: 8px;
       }
@@ -885,25 +976,30 @@
       <div class="employee-stats-section">
         <div class="section-header">
           <h2 class="section-title">근로자 현황</h2>
-          <button class="btn btn-primary" onclick="addEmployee()">+ 근로자 추가</button>
+          <div class="section-buttons">
+            <button class="employee-stats-toggle" onclick="toggleEmployeeStats()">통계 보기 <span class="toggle-icon">▼</span></button>
+            <button class="btn btn-primary" onclick="addEmployee()">+ 근로자 추가</button>
+          </div>
         </div>
         
-        <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-value" id="total-employees-count">0</div>
-            <div class="stat-label">총 근로자 수</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-value" id="regular-employees-count">0</div>
-            <div class="stat-label">정규직</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-value" id="part-time-employees-count">0</div>
-            <div class="stat-label">단시간 근로자</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-value" id="short-time-employees-count">0</div>
-            <div class="stat-label">초단시간 근로자</div>
+        <div class="employee-stats-content collapsed">
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-value" id="total-employees-count">0</div>
+              <div class="stat-label">총 근로자 수</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="regular-employees-count">0</div>
+              <div class="stat-label">정규직</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="part-time-employees-count">0</div>
+              <div class="stat-label">단시간 근로자</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="short-time-employees-count">0</div>
+              <div class="stat-label">초단시간 근로자</div>
+            </div>
           </div>
         </div>
       </div>
@@ -1646,6 +1742,27 @@
         detailContent.classList.add('collapsed');
         toggle.classList.remove('expanded');
         toggle.innerHTML = '상세 정보 보기 <span class="toggle-icon">▼</span>';
+      }
+    }
+
+    // 모바일에서 근로자 현황 펼치기/접기
+    function toggleEmployeeStats() {
+      const toggle = document.querySelector('.employee-stats-toggle');
+      const content = document.querySelector('.employee-stats-content');
+      const icon = toggle.querySelector('.toggle-icon');
+      
+      if (content.classList.contains('collapsed')) {
+        // 펼치기
+        content.classList.remove('collapsed');
+        content.classList.add('expanded');
+        toggle.classList.add('expanded');
+        toggle.innerHTML = '통계 숨기기 <span class="toggle-icon">▲</span>';
+      } else {
+        // 접기
+        content.classList.remove('expanded');
+        content.classList.add('collapsed');
+        toggle.classList.remove('expanded');
+        toggle.innerHTML = '통계 보기 <span class="toggle-icon">▼</span>';
       }
     }
 
