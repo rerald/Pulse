@@ -336,11 +336,11 @@
     }
 
     function getAttendanceStatus(workHours, inTime) {
-      if (workHours === 0) return '결근';
+      if (workHours === 0) return 'absent';
       const expectedIn = hmToMinutes(EXPECTED_SCHEDULE.start);
       const actualIn = hmToMinutes(inTime);
-      if (actualIn > expectedIn) return '지각';
-      return '정상';
+      if (actualIn > expectedIn) return 'late';
+      return 'normal';
     }
 
     // ===== 데이터베이스 연결 상태 확인 =====
