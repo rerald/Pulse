@@ -156,6 +156,68 @@
       color: var(--text);
     }
 
+    /* 근로자 목록 제목 옆 통계 표시 */
+    .employee-count-summary {
+      display: inline-flex;
+      align-items: center;
+      margin-left: 12px;
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--muted);
+    }
+
+    .employee-count-item {
+      position: relative;
+      cursor: pointer;
+      padding: 2px 4px;
+      border-radius: 4px;
+      transition: all 0.2s ease;
+    }
+
+    .employee-count-item:hover {
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .employee-count-item .tooltip {
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--text);
+      color: var(--white);
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      white-space: nowrap;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.2s ease;
+      z-index: 1000;
+      margin-bottom: 5px;
+    }
+
+    .employee-count-item .tooltip::after {
+      content: '';
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 4px solid transparent;
+      border-top-color: var(--text);
+    }
+
+    .employee-count-item:hover .tooltip {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .employee-count-separator {
+      margin: 0 4px;
+      color: var(--line);
+    }
+
     .btn {
       padding: 8px 16px;
       border: none;
@@ -762,6 +824,17 @@
       .section-title {
         font-size: 18px;
       }
+
+      /* 모바일에서 근로자 수 요약 표시 조정 */
+      .employee-count-summary {
+        font-size: 14px;
+        margin-left: 8px;
+      }
+
+      .employee-count-item .tooltip {
+        font-size: 11px;
+        padding: 4px 8px;
+      }
     }
   </style>
 </head>
@@ -1007,7 +1080,16 @@
       <!-- 근로자 목록 -->
       <div class="employees-section">
         <div class="section-header">
-          <h2 class="section-title">근로자 목록</h2>
+          <h2 class="section-title">
+            근로자 목록
+            <span class="employee-count-summary" id="employee-count-summary">
+              (<span class="employee-count-item" id="regular-count-item">0<span class="tooltip">정규직 근로자</span></span>
+              <span class="employee-count-separator">/</span>
+              <span class="employee-count-item" id="part-time-count-item">0<span class="tooltip">단시간 근로자</span></span>
+              <span class="employee-count-separator">/</span>
+              <span class="employee-count-item" id="short-time-count-item">0<span class="tooltip">초단시간 근로자</span></span>)
+            </span>
+          </h2>
           <div style="display: flex; gap: 12px;">
             <select class="form-input" id="employee-filter" onchange="filterEmployees()" style="width: auto;">
               <option value="all">전체</option>
@@ -1592,6 +1674,11 @@
       document.getElementById('regular-employees-count').textContent = regular;
       document.getElementById('part-time-employees-count').textContent = partTime;
       document.getElementById('short-time-employees-count').textContent = shortTime;
+
+      // 근로자 목록 제목 옆 요약 업데이트
+      document.getElementById('regular-count-item').textContent = regular;
+      document.getElementById('part-time-count-item').textContent = partTime;
+      document.getElementById('short-time-count-item').textContent = shortTime;
     }
 
     // 근로자 목록 렌더링
