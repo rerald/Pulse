@@ -1020,6 +1020,10 @@
       renderHistory();
       updateCalculations();
       
+      // 로컬스토리지 초기화 (디버깅용)
+      console.log('로컬스토리지 초기화 중...');
+      localStorage.removeItem(STORAGE_KEYS.WORK_LOGS);
+      
       // 테스트 데이터 추가 (개발용) - 9/29~10/3 주휴수당 테스트
       if (Object.keys(getWorkLogs()).length === 0) {
         console.log('9/29~10/3 주휴수당 테스트 데이터를 추가합니다...');
