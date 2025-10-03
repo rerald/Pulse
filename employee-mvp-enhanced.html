@@ -319,7 +319,9 @@
     // ===== 주휴수당 계산 =====
     function calculateWeeklyAllowance(totalHours, hourlyWage = HOURLY_WAGE) {
       if (totalHours >= 15) { // 주휴수당 요건 (15시간 이상)
-        return (totalHours / 40) * 8 * hourlyWage;
+        const allowance = (totalHours / 40) * 8 * hourlyWage;
+        console.log(`주휴수당 계산: ${totalHours}시간 ÷ 40시간 × 8시간 × ${hourlyWage}원 = ${allowance}원`);
+        return allowance;
       }
       return 0;
     }
