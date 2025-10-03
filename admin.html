@@ -518,11 +518,54 @@
       margin-top: 20px;
     }
 
+    .header-business-info-toggle {
+      background: var(--blue);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+      margin-bottom: 12px;
+    }
+
+    .header-business-info-toggle:hover {
+      background: #2563eb;
+    }
+
+    .header-business-info-toggle .toggle-icon {
+      margin-left: 6px;
+      transition: transform 0.3s ease;
+    }
+
+    .header-business-info-toggle.expanded .toggle-icon {
+      transform: rotate(180deg);
+    }
+
+    .header-business-info-content {
+      transition: all 0.3s ease;
+      overflow: hidden;
+    }
+
+    .header-business-info-content.collapsed {
+      max-height: 0;
+      opacity: 0;
+      margin-top: 0;
+    }
+
+    .header-business-info-content.expanded {
+      max-height: 1000px;
+      opacity: 1;
+      margin-top: 12px;
+    }
+
     .header-business-info .info-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       gap: 12px;
-      margin-top: 16px;
     }
 
     .header-business-info .info-card {
@@ -1115,38 +1158,42 @@
             
             <!-- 헤더 내 사업장 정보 -->
             <div class="header-business-info">
-              <div class="info-grid">
-                <div class="info-card">
-                  <div class="info-label">사업자등록번호</div>
-                  <div class="info-value" id="detail-registration">-</div>
-                </div>
-                <div class="info-card">
-                  <div class="info-label">대표자명</div>
-                  <div class="info-value" id="detail-owner">-</div>
-                </div>
-                <div class="info-card">
-                  <div class="info-label">업종</div>
-                  <div class="info-value" id="detail-type">-</div>
-                </div>
-                <div class="info-card">
-                  <div class="info-label">주소</div>
-                  <div class="info-value" id="detail-address">-</div>
-                </div>
-                <div class="info-card">
-                  <div class="info-label">연락처</div>
-                  <div class="info-value" id="detail-phone">-</div>
-                </div>
-                <div class="info-card">
-                  <div class="info-label">이메일</div>
-                  <div class="info-value" id="detail-email">-</div>
-                </div>
-                <div class="info-card">
-                  <div class="info-label">계약 시작일</div>
-                  <div class="info-value" id="detail-contract-start">-</div>
-                </div>
-                <div class="info-card">
-                  <div class="info-label">상태</div>
-                  <div class="info-value" id="detail-status">-</div>
+              <button class="header-business-info-toggle" onclick="toggleHeaderBusinessInfo()">상세 정보 보기 <span class="toggle-icon">▼</span></button>
+              
+              <div class="header-business-info-content collapsed">
+                <div class="info-grid">
+                  <div class="info-card">
+                    <div class="info-label">사업자등록번호</div>
+                    <div class="info-value" id="detail-registration">-</div>
+                  </div>
+                  <div class="info-card">
+                    <div class="info-label">대표자명</div>
+                    <div class="info-value" id="detail-owner">-</div>
+                  </div>
+                  <div class="info-card">
+                    <div class="info-label">업종</div>
+                    <div class="info-value" id="detail-type">-</div>
+                  </div>
+                  <div class="info-card">
+                    <div class="info-label">주소</div>
+                    <div class="info-value" id="detail-address">-</div>
+                  </div>
+                  <div class="info-card">
+                    <div class="info-label">연락처</div>
+                    <div class="info-value" id="detail-phone">-</div>
+                  </div>
+                  <div class="info-card">
+                    <div class="info-label">이메일</div>
+                    <div class="info-value" id="detail-email">-</div>
+                  </div>
+                  <div class="info-card">
+                    <div class="info-label">계약 시작일</div>
+                    <div class="info-value" id="detail-contract-start">-</div>
+                  </div>
+                  <div class="info-card">
+                    <div class="info-label">상태</div>
+                    <div class="info-value" id="detail-status">-</div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1917,6 +1964,27 @@
     function toggleBusinessInfo() {
       const toggle = document.querySelector('.business-info-toggle');
       const content = document.querySelector('.business-info-content');
+      const icon = toggle.querySelector('.toggle-icon');
+      
+      if (content.classList.contains('collapsed')) {
+        // 펼치기
+        content.classList.remove('collapsed');
+        content.classList.add('expanded');
+        toggle.classList.add('expanded');
+        toggle.innerHTML = '상세 정보 숨기기 <span class="toggle-icon">▲</span>';
+      } else {
+        // 접기
+        content.classList.remove('expanded');
+        content.classList.add('collapsed');
+        toggle.classList.remove('expanded');
+        toggle.innerHTML = '상세 정보 보기 <span class="toggle-icon">▼</span>';
+      }
+    }
+
+    // 헤더 내 사업장 정보 펼치기/접기
+    function toggleHeaderBusinessInfo() {
+      const toggle = document.querySelector('.header-business-info-toggle');
+      const content = document.querySelector('.header-business-info-content');
       const icon = toggle.querySelector('.toggle-icon');
       
       if (content.classList.contains('collapsed')) {
