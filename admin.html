@@ -169,9 +169,10 @@
     .employee-count-item {
       position: relative;
       cursor: pointer;
-      padding: 2px 4px;
+      padding: 2px 6px;
       border-radius: 4px;
       transition: all 0.2s ease;
+      display: inline-block;
     }
 
     .employee-count-item:hover {
@@ -179,23 +180,31 @@
       color: var(--text);
     }
 
+    .employee-count-item:focus {
+      outline: 2px solid var(--blue);
+      outline-offset: 2px;
+    }
+
     .employee-count-item .tooltip {
       position: absolute;
       bottom: 100%;
       left: 50%;
       transform: translateX(-50%);
-      background: var(--text);
-      color: var(--white);
-      padding: 6px 10px;
-      border-radius: 6px;
+      background: #1e293b;
+      color: #ffffff;
+      padding: 8px 12px;
+      border-radius: 8px;
       font-size: 12px;
       font-weight: 500;
       white-space: nowrap;
       opacity: 0;
       visibility: hidden;
-      transition: all 0.2s ease;
+      transition: all 0.3s ease;
       z-index: 1000;
-      margin-bottom: 5px;
+      margin-bottom: 10px;
+      pointer-events: none;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
     .employee-count-item .tooltip::after {
@@ -204,13 +213,22 @@
       top: 100%;
       left: 50%;
       transform: translateX(-50%);
-      border: 4px solid transparent;
-      border-top-color: var(--text);
+      border: 6px solid transparent;
+      border-top-color: #1e293b;
     }
 
-    .employee-count-item:hover .tooltip {
+    .employee-count-item:hover .tooltip,
+    .employee-count-item:focus .tooltip {
       opacity: 1;
       visibility: visible;
+    }
+
+    /* 터치 디바이스에서도 툴팁이 보이도록 */
+    @media (hover: none) {
+      .employee-count-item:active .tooltip {
+        opacity: 1;
+        visibility: visible;
+      }
     }
 
     .employee-count-separator {
