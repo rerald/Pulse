@@ -518,18 +518,24 @@
       margin-top: 20px;
     }
 
+    .business-info-line {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 8px;
+    }
+
     .header-business-info-toggle {
       background: var(--blue);
       color: white;
       border: none;
       border-radius: 6px;
-      padding: 6px 12px;
-      font-size: 13px;
+      padding: 4px 8px;
+      font-size: 12px;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.2s;
       white-space: nowrap;
-      margin-bottom: 12px;
     }
 
     .header-business-info-toggle:hover {
@@ -1154,11 +1160,13 @@
                 <button class="btn btn-secondary business-detail-back-btn" onclick="goBackToList()">← 목록으로</button>
               </div>
             </div>
-            <p id="detail-business-info">사업자등록번호 | 대표자명 | 업종</p>
+            <div class="business-info-line">
+              <p id="detail-business-info">사업자등록번호 | 대표자명 | 업종</p>
+              <button class="header-business-info-toggle" onclick="toggleHeaderBusinessInfo()">상세 정보 <span class="toggle-icon">▼</span></button>
+            </div>
             
             <!-- 헤더 내 사업장 정보 -->
             <div class="header-business-info">
-              <button class="header-business-info-toggle" onclick="toggleHeaderBusinessInfo()">상세 정보 보기 <span class="toggle-icon">▼</span></button>
               
               <div class="header-business-info-content collapsed">
                 <div class="info-grid">
@@ -1992,13 +2000,13 @@
         content.classList.remove('collapsed');
         content.classList.add('expanded');
         toggle.classList.add('expanded');
-        toggle.innerHTML = '상세 정보 숨기기 <span class="toggle-icon">▲</span>';
+        toggle.innerHTML = '상세 정보 <span class="toggle-icon">▲</span>';
       } else {
         // 접기
         content.classList.remove('expanded');
         content.classList.add('collapsed');
         toggle.classList.remove('expanded');
-        toggle.innerHTML = '상세 정보 보기 <span class="toggle-icon">▼</span>';
+        toggle.innerHTML = '상세 정보 <span class="toggle-icon">▼</span>';
       }
     }
 
