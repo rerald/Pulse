@@ -137,16 +137,24 @@
       <!-- 실시간 계산 결과 -->
       <div class="calc-result" id="calc-result" style="display:none;">
         <div class="calc-item">
-          <span class="calc-label">실근로시간</span>
+          <span class="calc-label">오늘 실근로시간</span>
           <span class="calc-value" id="work-hours">0.0h</span>
         </div>
         <div class="calc-item">
-          <span class="calc-label">이번 주 누적</span>
-          <span class="calc-value" id="week-total">0.0h</span>
+          <span class="calc-label">이번 달 누적시간</span>
+          <span class="calc-value" id="month-total">0.0h</span>
         </div>
         <div class="calc-item">
-          <span class="calc-label">예상 주휴수당</span>
-          <span class="calc-value highlight" id="weekly-allowance">0원</span>
+          <span class="calc-label">누적 급여</span>
+          <span class="calc-value" id="total-salary">0원</span>
+        </div>
+        <div class="calc-item">
+          <span class="calc-label">누적 주휴수당</span>
+          <span class="calc-value" id="total-allowance">0원</span>
+        </div>
+        <div class="calc-item">
+          <span class="calc-label">현재 받을 총급여</span>
+          <span class="calc-value highlight" id="total-payment">0원</span>
         </div>
       </div>
 
@@ -154,9 +162,9 @@
     </div>
 
     <div class="card" style="margin-bottom:12px; display:flex; gap:8px; align-items:center;">
-      <span class="chip" id="week-summary">이번 주 누적 근무 0.0h</span>
+      <span class="chip" id="month-summary">이번 달 누적 근무 0.0h</span>
       <span class="chip" id="attendance-status">개근 예</span>
-      <span class="chip" id="allowance-summary">예상 주휴수당 0원</span>
+      <span class="chip" id="allowance-summary">누적 주휴수당 0원</span>
     </div>
 
     <h4>근무 기록 히스토리 (최신순)</h4>
@@ -346,12 +354,69 @@
 
       const workHours = calculateWorkHours(inTime, outTime, breakMin);
       const today = getDateString();
-      
-      // 이번 주 누적 근무시간 계산
-      const weekRange = getWeekRange();
       const logs = getWorkLogs();
-      let weekTotal = 0;
+      const hourlyWage = getHourlyWage();
       
+      // 이번 달 누적 근무시간 계산
+      const currentDate = new Date();
+      const currentMonth = currentDate.getMonth();
+      const currentYear = currentDate.getFullYear();
+      let monthTotal = 0;
+      let totalSalary = 0;
+      let totalAllowance = 0;
+      
+      // 이번 달의 모든 기록을 순회
+      Object.keys(logs).forEach(dateStr => {
+        const logDate = new Date(dateStr);
+        if (logDate.getMonth() === currentMonth && logDate.getFullYear() === currentYear) {
+          const logHours = logDate.toDateString() === new Date(today).toDateString() ? workHours : (logs[dateStr].workHours || 0);
+          monthTotal += logHours;
+          totalSalary += logHours * hourlyWage;
+          
+          // 주휴수당 계산 (주 단위로)
+          const weekRange = getWeekRange(logDate);
+          const weekLogs = {};
+          for (let d = new Date(weekRange.start); d <= new Date(weekRange.end); d.setDate(d.getDate() + 1)) {
+            const weekDateStr = getDateString(d);
+            if (logs[weekDateStr] && logs[weekDateStr].workHours) {
+              weekLogs[weekDateStr] = logs[weekDateStr].workHours;
+            }
+          }
+          
+          // 해당 주의 총 근무시간 계산
+          const weekTotal = Object.values(weekLogs).reduce((sum, hours) => sum + hours, 0);
+          if (weekTotal >= 15) {
+            const weekAllowance = calculateWeeklyAllowance(weekTotal, hourlyWage);
+            // 주휴수당은 한 번만 계산 (중복 방지)
+            if (dateStr === weekRange.start) {
+              totalAllowance += weekAllowance;
+            }
+          }
+        }
+      });
+      
+      // 오늘 근무시간이 아직 저장되지 않았다면 추가
+      if (!logs[today]) {
+        monthTotal += workHours;
+        totalSalary += workHours * hourlyWage;
+      }
+
+      const totalPayment = totalSalary + totalAllowance;
+
+      // UI 업데이트
+      document.getElementById('work-hours').textContent = workHours.toFixed(1) + 'h';
+      document.getElementById('month-total').textContent = monthTotal.toFixed(1) + 'h';
+      document.getElementById('total-salary').textContent = formatCurrency(totalSalary);
+      document.getElementById('total-allowance').textContent = formatCurrency(totalAllowance);
+      document.getElementById('total-payment').textContent = formatCurrency(totalPayment);
+      
+      // 하단 요약 정보 업데이트
+      document.getElementById('month-summary').textContent = `이번 달 누적 근무 ${monthTotal.toFixed(1)}h`;
+      document.getElementById('allowance-summary').textContent = `누적 주휴수당 ${formatCurrency(totalAllowance)}`;
+      
+      // 개근 여부 판단 (주 단위 기준)
+      const weekRange = getWeekRange();
+      let weekTotal = 0;
       for (let d = new Date(weekRange.start); d <= new Date(weekRange.end); d.setDate(d.getDate() + 1)) {
         const dateStr = getDateString(d);
         if (logs[dateStr] && logs[dateStr].workHours) {
@@ -359,29 +424,11 @@
         }
       }
       
-      // 오늘 근무시간 추가 (저장되지 않은 경우)
       if (!logs[today]) {
         weekTotal += workHours;
       } else {
-        // 이미 저장된 오늘 기록이 있으면 그 값을 사용
         weekTotal += logs[today].workHours || 0;
       }
-
-      const allowance = calculateWeeklyAllowance(weekTotal, getHourlyWage());
-
-      // UI 업데이트
-      document.getElementById('work-hours').textContent = workHours.toFixed(1) + 'h';
-      document.getElementById('week-total').textContent = weekTotal.toFixed(1) + 'h';
-      document.getElementById('weekly-allowance').textContent = formatCurrency(allowance);
-      
-      document.getElementById('week-summary').textContent = `이번 주 누적 근무 ${weekTotal.toFixed(1)}h`;
-      document.getElementById('allowance-summary').textContent = `예상 주휴수당 ${formatCurrency(allowance)}`;
-      
-      // 개근 여부 판단
-      const attendanceDays = Object.keys(logs).filter(date => {
-        const log = logs[date];
-        return log && log.workHours > 0 && date >= weekRange.start && date <= weekRange.end;
-      }).length;
       
       const attendanceStatus = weekTotal >= 15 ? '개근 예' : '개근 불가';
       document.getElementById('attendance-status').textContent = attendanceStatus;
