@@ -977,7 +977,7 @@
         <div class="section-header">
           <h2 class="section-title">근로자 현황</h2>
           <div class="section-buttons">
-            <button class="employee-stats-toggle" onclick="toggleEmployeeStats()">통계 보기 <span class="toggle-icon">▼</span></button>
+            <button class="employee-stats-toggle" onclick="toggleEmployeeStats()">펼치기 <span class="toggle-icon">▼</span></button>
             <button class="btn btn-primary" onclick="addEmployee()">+ 근로자 추가</button>
           </div>
         </div>
@@ -1756,13 +1756,13 @@
         content.classList.remove('collapsed');
         content.classList.add('expanded');
         toggle.classList.add('expanded');
-        toggle.innerHTML = '통계 숨기기 <span class="toggle-icon">▲</span>';
+        toggle.innerHTML = '접기 <span class="toggle-icon">▲</span>';
       } else {
         // 접기
         content.classList.remove('expanded');
         content.classList.add('collapsed');
         toggle.classList.remove('expanded');
-        toggle.innerHTML = '통계 보기 <span class="toggle-icon">▼</span>';
+        toggle.innerHTML = '펼치기 <span class="toggle-icon">▼</span>';
       }
     }
 
