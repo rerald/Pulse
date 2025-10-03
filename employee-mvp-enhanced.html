@@ -74,7 +74,24 @@
     .snackbar .action{ background:transparent; border:1px solid #fff; color:#fff; border-radius:999px; padding:6px 10px; font-size:12px; line-height:1; cursor:pointer; }
 
     /* today line */
-    .today-line{ margin-top:4px; font-size:12px; color:var(--muted); cursor:pointer; }
+    .today-line{ 
+      margin-top:4px; 
+      font-size:12px; 
+      color:var(--muted); 
+      cursor:pointer; 
+      transition: all 0.2s ease;
+      user-select: none;
+      padding: 8px 12px;
+      margin: 0 -12px 8px -12px;
+      border-radius: 6px;
+    }
+    .today-line:hover {
+      color: var(--blue);
+      background: var(--bg);
+    }
+    .today-line:active {
+      transform: scale(0.98);
+    }
 
     /* Calendar fullscreen (z-index high) */
     .calendar-page{ position:fixed; inset:0; background:#fff; z-index:9999; display:none; flex-direction:column; }
@@ -110,7 +127,7 @@
 
     <div class="card card-strong" style="margin-bottom:12px;">
       <div class="title-row"><h3>오늘 근무 기록</h3><span class="chip" id="empName">홍길동</span></div>
-      <div class="today-line" id="today-line">오늘: <span id="today-date"></span></div>
+      <div class="today-line" id="today-line" onclick="openDatePicker()">오늘: <span id="today-date"></span></div>
 
       <div class="field-row" style="margin-top:8px;">
         <div class="field">
@@ -215,10 +232,32 @@
     <div class="cal-grid" id="cal-grid"></div>
   </div>
 
+  <!-- Date Picker Modal -->
+  <div id="date-picker-overlay" onclick="closeDatePicker()" style="display:none; position:fixed; left:0; top:0; right:0; bottom:0; background:rgba(0,0,0,.35); z-index:10000;"></div>
+  <div id="date-picker-modal" style="display:none; position:fixed; left:50%; top:50%; transform:translate(-50%, -50%); background:#fff; border-radius:16px; box-shadow:0 8px 24px rgba(0,0,0,.12); z-index:10001; min-width:320px; max-width:90vw;">
+    <div class="header" style="padding:16px 20px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center;">
+      <strong>날짜 선택</strong>
+      <a href="#" onclick="closeDatePicker(); return false;" class="muted">닫기</a>
+    </div>
+    <div style="padding:20px;">
+      <div style="margin-bottom:16px;">
+        <label style="display:block; font-size:14px; color:var(--muted); margin-bottom:8px;">근무 기록할 날짜</label>
+        <input type="date" id="selected-date" style="width:100%; height:44px; padding:0 12px; border:1px solid var(--line); border-radius:8px; background:#fff; font-size:16px;" />
+      </div>
+      <div style="display:flex; gap:8px; justify-content:flex-end;">
+        <button onclick="closeDatePicker()" style="padding:8px 16px; border:1px solid var(--line); border-radius:8px; background:#fff; color:var(--text); cursor:pointer;">취소</button>
+        <button onclick="loadSelectedDate()" style="padding:8px 16px; border:none; border-radius:8px; background:var(--blue); color:#fff; cursor:pointer;">선택</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     // ===== 전역 변수 및 설정 =====
     const HOURLY_WAGE = 12000; // 시급 (기본값)
     const EXPECTED_SCHEDULE = { start: '09:00', end: '18:00', breakMin: 60 };
+    
+    // 현재 선택된 날짜 (기본값: 오늘)
+    let currentSelectedDate = getDateString();
     
     // 로컬스토리지 키
     const STORAGE_KEYS = {
@@ -692,7 +731,7 @@
         return;
       }
       
-      const today = getDateString();
+      const targetDate = currentSelectedDate; // 현재 선택된 날짜에 기록 저장
       const log = {
         in: inTime,
         out: outTime,
@@ -700,7 +739,7 @@
         approved: false
       };
       
-      saveWorkLog(today, log);
+      saveWorkLog(targetDate, log);
       renderHistory();
       updateCalculations();
       
@@ -856,6 +895,87 @@
       if (calClose) {
         calClose.addEventListener('click', closeCalendarPage);
       }
+      
+      // 날짜 선택 관련 함수들
+      window.openDatePicker = function() {
+        const overlay = document.getElementById('date-picker-overlay');
+        const modal = document.getElementById('date-picker-modal');
+        const dateInput = document.getElementById('selected-date');
+        
+        if (overlay && modal && dateInput) {
+          // 현재 선택된 날짜로 설정
+          dateInput.value = currentSelectedDate;
+          overlay.style.display = 'block';
+          modal.style.display = 'block';
+        }
+      };
+
+      window.closeDatePicker = function() {
+        const overlay = document.getElementById('date-picker-overlay');
+        const modal = document.getElementById('date-picker-modal');
+        
+        if (overlay && modal) {
+          overlay.style.display = 'none';
+          modal.style.display = 'none';
+        }
+      };
+
+      window.loadSelectedDate = function() {
+        const dateInput = document.getElementById('selected-date');
+        if (!dateInput || !dateInput.value) {
+          window.closeDatePicker();
+          return;
+        }
+        
+        const selectedDate = dateInput.value;
+        currentSelectedDate = selectedDate;
+        
+        // 날짜 표시 업데이트
+        const todaySpan = document.getElementById('today-date');
+        if (todaySpan) {
+          const date = new Date(selectedDate + 'T00:00:00');
+          const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+          const formattedDate = selectedDate + ' (' + dayNames[date.getDay()] + ')';
+          
+          // 오늘인지 확인하여 텍스트 변경
+          const today = getDateString();
+          const todayLine = document.getElementById('today-line');
+          if (selectedDate === today) {
+            todayLine.innerHTML = '오늘: <span id="today-date">' + formattedDate + '</span>';
+          } else {
+            todayLine.innerHTML = '선택일: <span id="today-date">' + formattedDate + '</span>';
+          }
+        }
+        
+        // 해당 날짜의 근무 기록 로드
+        const logs = getWorkLogs();
+        const log = logs[selectedDate];
+        
+        if (log) {
+          // 기존 기록이 있으면 로드
+          document.getElementById('inTime').value = log.in;
+          document.getElementById('outTime').value = log.out;
+          document.getElementById('breakMin').value = log.breakMin;
+        } else {
+          // 기록이 없으면 기본값으로 설정
+          document.getElementById('inTime').value = EXPECTED_SCHEDULE.start;
+          document.getElementById('outTime').value = EXPECTED_SCHEDULE.end;
+          document.getElementById('breakMin').value = EXPECTED_SCHEDULE.breakMin;
+        }
+        
+        // 시간 표시 업데이트
+        document.querySelectorAll('.time-box').forEach(function(box) {
+          const input = box.querySelector('input[type="time"]');
+          const display = box.querySelector('.time-display');
+          if (input && display) {
+            display.textContent = input.value || '--:--';
+          }
+        });
+        
+        // 계산 업데이트
+        updateCalculations();
+        window.closeDatePicker();
+      };
       
       // 초기 렌더링
       renderHistory();
