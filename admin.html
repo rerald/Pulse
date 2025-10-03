@@ -524,15 +524,41 @@
       border: 1px solid var(--line);
     }
 
-    /* 모바일에서 사업장 정보 펼치기/접기 기능 */
+    /* 사업장 정보 카드 스타일 */
+    .business-info-card {
+      background: var(--white);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--line);
+      margin-bottom: 24px;
+    }
+
+    .business-info-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .business-info-card-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .business-info-card-buttons {
+      display: flex;
+      gap: 8px;
+    }
+
     .business-info-toggle {
-      display: none;
       background: var(--blue);
       color: white;
       border: none;
-      border-radius: 8px;
-      padding: 8px 16px;
-      font-size: 14px;
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 13px;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.2s;
@@ -544,7 +570,7 @@
     }
 
     .business-info-toggle .toggle-icon {
-      margin-left: 8px;
+      margin-left: 6px;
       transition: transform 0.3s ease;
     }
 
@@ -554,27 +580,19 @@
 
     .business-info-content {
       transition: all 0.3s ease;
+      overflow: hidden;
     }
 
     .business-info-content.collapsed {
       max-height: 0;
-      overflow: hidden;
       opacity: 0;
+      margin-top: 0;
     }
 
     .business-info-content.expanded {
       max-height: 1000px;
       opacity: 1;
-    }
-
-    /* 모바일에서 핵심 정보도 접혀있음 */
-    .business-info-essential {
-      display: none;
-      transition: all 0.3s ease;
-    }
-
-    .business-info-essential.expanded {
-      display: block;
+      margin-top: 16px;
     }
 
     /* 근로자 현황 섹션 펼치기/접기 기능 */
@@ -795,29 +813,23 @@
         grid-template-columns: repeat(2, 1fr);
       }
 
-      /* 모바일에서 사업장 정보 펼치기/접기 기능 활성화 */
-      .business-info-toggle {
-        display: block;
+      /* 모바일에서 사업장 정보 카드 조정 */
+      .business-info-card {
+        padding: 16px;
       }
 
-      .business-info-essential {
-        display: none;
-        margin-bottom: 16px;
+      .business-info-card-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
       }
 
-      .business-info-essential.expanded {
-        display: block;
+      .business-info-card-buttons {
+        align-self: flex-end;
       }
 
-      .business-info-content {
-        max-height: 0;
-        overflow: hidden;
-        opacity: 0;
-      }
-
-      .business-info-content.expanded {
-        max-height: 1000px;
-        opacity: 1;
+      .business-info-card-title {
+        font-size: 16px;
       }
 
       /* 모바일에서 근로자 현황 펼치기/접기 기능 활성화 */
@@ -1052,32 +1064,15 @@
       </div>
 
       <!-- 사업장 기본 정보 -->
-      <div class="business-info-section">
-        <div class="section-header">
-          <h2 class="section-title">사업장 기본 정보</h2>
-          <div class="section-buttons">
+      <div class="business-info-card">
+        <div class="business-info-card-header">
+          <h2 class="business-info-card-title">사업장 기본 정보</h2>
+          <div class="business-info-card-buttons">
             <button class="business-info-toggle" onclick="toggleBusinessInfo()">상세 정보 보기 <span class="toggle-icon">▼</span></button>
             <button class="btn btn-primary" onclick="editBusinessInfo()">정보 수정</button>
           </div>
         </div>
-
-        <!-- 모바일에서 핵심 정보만 표시 -->
-        <div class="business-info-essential">
-          <div class="info-card">
-            <div class="info-label">사업자등록번호</div>
-            <div class="info-value" id="detail-registration-mobile">-</div>
-          </div>
-          <div class="info-card">
-            <div class="info-label">대표자명</div>
-            <div class="info-value" id="detail-owner-mobile">-</div>
-          </div>
-          <div class="info-card">
-            <div class="info-label">상태</div>
-            <div class="info-value" id="detail-status-mobile">-</div>
-          </div>
-        </div>
         
-        <!-- 전체 정보 (모바일에서 접힘) -->
         <div class="business-info-content collapsed">
           <div class="info-grid">
             <div class="info-card">
@@ -1725,11 +1720,6 @@
       const statusText = business.status === 'active' ? '활성' : 
                         business.status === 'inactive' ? '비활성' : '일시정지';
       document.getElementById('detail-status').textContent = statusText;
-
-      // 모바일용 핵심 정보도 업데이트
-      document.getElementById('detail-registration-mobile').textContent = business.registration;
-      document.getElementById('detail-owner-mobile').textContent = business.owner;
-      document.getElementById('detail-status-mobile').textContent = statusText;
     }
 
     // 근로자 통계 업데이트
@@ -1882,22 +1872,19 @@
     // 모바일에서 사업장 정보 펼치기/접기
     function toggleBusinessInfo() {
       const toggle = document.querySelector('.business-info-toggle');
-      const essentialContent = document.querySelector('.business-info-essential');
-      const detailContent = document.querySelector('.business-info-content');
+      const content = document.querySelector('.business-info-content');
       const icon = toggle.querySelector('.toggle-icon');
       
-      if (detailContent.classList.contains('collapsed')) {
-        // 펼치기 - 핵심 정보와 상세 정보 모두 표시
-        essentialContent.classList.add('expanded');
-        detailContent.classList.remove('collapsed');
-        detailContent.classList.add('expanded');
+      if (content.classList.contains('collapsed')) {
+        // 펼치기
+        content.classList.remove('collapsed');
+        content.classList.add('expanded');
         toggle.classList.add('expanded');
         toggle.innerHTML = '상세 정보 숨기기 <span class="toggle-icon">▲</span>';
       } else {
-        // 접기 - 핵심 정보와 상세 정보 모두 숨김
-        essentialContent.classList.remove('expanded');
-        detailContent.classList.remove('expanded');
-        detailContent.classList.add('collapsed');
+        // 접기
+        content.classList.remove('expanded');
+        content.classList.add('collapsed');
         toggle.classList.remove('expanded');
         toggle.innerHTML = '상세 정보 보기 <span class="toggle-icon">▼</span>';
       }
